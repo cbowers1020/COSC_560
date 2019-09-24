@@ -130,6 +130,7 @@ def sudoku_solver(on_vars, output=True, check_unique=True, model_list=[]):
 
     # Add constraints from previous solves
     if(len(model_list) > 0):
+        model_vars = []
         if(output):
             print("adding previous model constraints")
         count_vars = 0
@@ -137,7 +138,8 @@ def sudoku_solver(on_vars, output=True, check_unique=True, model_list=[]):
             for model in model_list:
                 if(model[bool_vars[key]] and (key not in on_vars)):
                     count_vars += 1
-                    s.add(Not(bool_vars[key]))
+                    model_vars.append(bool_vars[key])
+        s.add(Not(And(bool_vars[key])))
         if(output):
             print("Added " + str(count_vars) + " from previous model(s)")
 
