@@ -292,8 +292,8 @@ def main(args):
     solvable, model = sudoku_solver(on_vars)
     
     if(args.remove_constraint):
-        print("Removing first constraint: 1_2_1")
-        print("Calculating number of solutions", end="")
+        print("\n\n\nRemoving first constraint: 1_2_1")
+        print("Calculating number of solutions")
         on_vars = on_vars[1:]
         num_sols = 0
         pers = 0
@@ -302,11 +302,6 @@ def main(args):
             solvable, new_model = sudoku_solver(on_vars, output=True, check_unique=False, model_list=model_list)
             if (solvable):
                 model_list.append(new_model)
-                if(pers < 10):
-                    print(".", end="")
-                else:
-                    pers = 0
-                    print(".")
                 num_sols += 1
             else:
                 break
