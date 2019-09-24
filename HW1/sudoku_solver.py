@@ -77,7 +77,11 @@ def print_board(rows, cols, vals, bool_vars, model, init=False, on_vars=""):
 
 
     for r in range(0, 9):
+        if (r == 3 or r == 6):
+            print("-------------------------------------------------")
         for c in range(0, 9):
+            if(c == 3 or c == 6):
+                print("|  ", end="")
             print(str(print_vars[r][c]) + "  ", end = '')
         print("")
 
@@ -232,19 +236,19 @@ def sudoku_solver(on_vars, output=True, check_unique=True, model_list=[]):
                 for n in range(0,3):
                         cells_in_zone.append(str(r + m) + "_" + str(c + n) + "_")
 
-        # Each value that can be in a cell
-        for val in range(1,10):
-            for s1 in cells_in_zone:
-                # list to hold all "Not" vars
-                not_list = []
-                for s2 in cells_in_zone:
-                    if(s1 == s2):
-                        continue
-                    # AND all others to be false
-                    not_list.append(Not(bool_vars[str(s2) + str(val)]))
-                # All sub expressions are AND-ed together in solver
-                count_vars += 1
-                s.add(Implies(bool_vars[str(s1) + str(val)], And(not_list)))
+            # Each value that can be in a cell
+            for val in range(1,10):
+                for s1 in cells_in_zone:
+                    # list to hold all "Not" vars
+                    not_list = []
+                    for s2 in cells_in_zone:
+                        if(s1 == s2):
+                            continue
+                        # AND all others to be false
+                        not_list.append(Not(bool_vars[str(s2) + str(val)]))
+                    # All sub expressions are AND-ed together in solver
+                    count_vars += 1
+                    s.add(Implies(bool_vars[str(s1) + str(val)], And(not_list)))
     if(output):
         print("Added " + str(count_vars) + " constraints to restrict each square not to repeat truth values")
 
