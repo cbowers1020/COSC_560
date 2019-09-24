@@ -96,6 +96,7 @@ def is_unique_sol(s, bool_vars, model):
 
 
 def sudoku_solver(on_vars, output=True, check_unique=True, model_list=[]):
+    """ Solver function to solve sudoku puzzle """
 
     rows = ["1_","2_","3_","4_","5_","6_","7_","8_","9_"]
     cols = ["1_","2_","3_","4_","5_","6_","7_","8_","9_"]
@@ -123,17 +124,19 @@ def sudoku_solver(on_vars, output=True, check_unique=True, model_list=[]):
         print_board(rows, cols, vals, bool_vars, model, init=True, on_vars=on_vars)
         print("")
 
+    # Add constraints from previous solves
     if(len(model_list) > 0):
         if(output):
             print("adding previous model constraints")
         count_vars = 0
         for key in bool_vars.keys():
             for model in model_list:
-                if(model[bool_vars[key]]):
+                if(model[bool_vars[key]] and (key not in on_vars)):
                     count_vars += 1
                     s.add(Not(bool_vars[key]))
         if(output):
             print("Added " + str(count_vars) + " from previous model(s)")
+
 
     # First constrain every cell to contain at least one of the values
     count_vars = 0
@@ -246,7 +249,7 @@ def sudoku_solver(on_vars, output=True, check_unique=True, model_list=[]):
         print("Added " + str(count_vars) + " constraints to restrict each square not to repeat truth values")
 
 
-    # print(s.assertions())
+    # print total assertions
     if(output):
         count = 0
         for i, formula in enumerate(s.assertions()):
@@ -254,7 +257,7 @@ def sudoku_solver(on_vars, output=True, check_unique=True, model_list=[]):
             # print("{" + str(i) + "}: {" + str(formula) + "}")
         print("There are " + str(count) + " assertions")
 
-
+    # Check if there is a solution
     if s.check() == sat:
         if(output):
             print("sat!\n")
@@ -296,7 +299,6 @@ def main(args):
         print("Calculating number of solutions")
         on_vars = on_vars[1:]
         num_sols = 0
-        pers = 0
         model_list = []
         while(True):
             solvable, new_model = sudoku_solver(on_vars, output=True, check_unique=False, model_list=model_list)
