@@ -1,0 +1,25 @@
+This folder contains the files relevant to HW1
+
+COSC560-HW1-v2.pdf
+    - The PDF file defining the homework problems
+
+problem5.txt
+    - Answers to the first part of problem 5
+
+sudoku_input.txt
+    - A file that defines the initial inputs for the sudoku. 
+    - Each number is represented as a "row_column_value" string
+    - One number per line
+
+sudoku_solver.py
+    - A python script that solves a sudoku as defined by sudoku_input.txt
+    - Takes arguments:
+        - --input_file (default: sudoku_input.txt): specifies input file
+        - --remove_constraint: flag variable to execute additional bonus 
+                                section of problem 5 and remove first constraint. Could run awhile depending on initial puzzle
+
+sudoku_solver_output.txt
+    - A file containing sample output from sudoku_solver.py, for quick reference
+
+z3-demo
+    - Folder with z3 sample demos
