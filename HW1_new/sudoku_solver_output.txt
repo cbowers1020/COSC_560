@@ -1,0 +1,108 @@
+Number of boolean vars = 729
+Added 24 for initial conditions
+
+Initial board:
+
+0.0  1.0  0.0  |  4.0  0.0  2.0  |  0.0  5.0  0.0  
+5.0  0.0  0.0  |  0.0  0.0  0.0  |  0.0  0.0  6.0  
+0.0  0.0  0.0  |  3.0  0.0  1.0  |  0.0  0.0  0.0  
+-------------------------------------------------
+7.0  0.0  5.0  |  0.0  0.0  0.0  |  4.0  0.0  8.0  
+0.0  0.0  0.0  |  0.0  0.0  0.0  |  0.0  0.0  0.0  
+2.0  0.0  8.0  |  0.0  0.0  0.0  |  5.0  0.0  9.0  
+-------------------------------------------------
+0.0  0.0  0.0  |  9.0  0.0  6.0  |  0.0  0.0  0.0  
+6.0  0.0  0.0  |  0.0  0.0  0.0  |  0.0  0.0  2.0  
+0.0  7.0  0.0  |  1.0  0.0  3.0  |  0.0  4.0  0.0  
+
+Added 729 constraints to restrict each cell not to represent two different digits
+Added 729 constraints to restrict each row not to repeat truth values
+Added 729 constraints to restrict each column not to repeat truth values
+Added 729 constraints to restrict each square not to repeat truth values
+There are 3021 assertions
+sat!
+
+Solution:
+
+3.0  1.0  9.0  |  4.0  6.0  2.0  |  8.0  5.0  7.0  
+5.0  2.0  4.0  |  7.0  9.0  8.0  |  1.0  3.0  6.0  
+8.0  6.0  7.0  |  3.0  5.0  1.0  |  9.0  2.0  4.0  
+-------------------------------------------------
+7.0  3.0  5.0  |  2.0  1.0  9.0  |  4.0  6.0  8.0  
+1.0  9.0  6.0  |  8.0  4.0  5.0  |  2.0  7.0  3.0  
+2.0  4.0  8.0  |  6.0  3.0  7.0  |  5.0  1.0  9.0  
+-------------------------------------------------
+4.0  5.0  3.0  |  9.0  2.0  6.0  |  7.0  8.0  1.0  
+6.0  8.0  1.0  |  5.0  7.0  4.0  |  3.0  9.0  2.0  
+9.0  7.0  2.0  |  1.0  8.0  3.0  |  6.0  4.0  5.0  
+
+The above solution is unique!
+
+
+
+Removing first constraint: 1_2_1
+Calculating number of solutions
+Number of boolean vars = 729
+Added 23 for initial conditions
+
+Initial board:
+
+0.0  0.0  0.0  |  4.0  0.0  2.0  |  0.0  5.0  0.0  
+5.0  0.0  0.0  |  0.0  0.0  0.0  |  0.0  0.0  6.0  
+0.0  0.0  0.0  |  3.0  0.0  1.0  |  0.0  0.0  0.0  
+-------------------------------------------------
+7.0  0.0  5.0  |  0.0  0.0  0.0  |  4.0  0.0  8.0  
+0.0  0.0  0.0  |  0.0  0.0  0.0  |  0.0  0.0  0.0  
+2.0  0.0  8.0  |  0.0  0.0  0.0  |  5.0  0.0  9.0  
+-------------------------------------------------
+0.0  0.0  0.0  |  9.0  0.0  6.0  |  0.0  0.0  0.0  
+6.0  0.0  0.0  |  0.0  0.0  0.0  |  0.0  0.0  2.0  
+0.0  7.0  0.0  |  1.0  0.0  3.0  |  0.0  4.0  0.0  
+
+Added 729 constraints to restrict each cell not to represent two different digits
+Added 729 constraints to restrict each row not to repeat truth values
+Added 729 constraints to restrict each column not to repeat truth values
+Added 729 constraints to restrict each square not to repeat truth values
+There are 3020 assertions
+sat!
+
+Solution:
+
+3.0  8.0  7.0  |  4.0  6.0  2.0  |  9.0  5.0  1.0  
+5.0  4.0  1.0  |  8.0  9.0  7.0  |  2.0  3.0  6.0  
+9.0  2.0  6.0  |  3.0  5.0  1.0  |  8.0  7.0  4.0  
+-------------------------------------------------
+7.0  3.0  5.0  |  2.0  1.0  9.0  |  4.0  6.0  8.0  
+1.0  9.0  4.0  |  6.0  8.0  5.0  |  3.0  2.0  7.0  
+2.0  6.0  8.0  |  7.0  3.0  4.0  |  5.0  1.0  9.0  
+-------------------------------------------------
+4.0  5.0  2.0  |  9.0  7.0  6.0  |  1.0  8.0  3.0  
+6.0  1.0  3.0  |  5.0  4.0  8.0  |  7.0  9.0  2.0  
+8.0  7.0  9.0  |  1.0  2.0  3.0  |  6.0  4.0  5.0  
+
+Number of boolean vars = 729
+Added 23 for initial conditions
+
+Initial board:
+
+0.0  0.0  0.0  |  4.0  0.0  2.0  |  0.0  5.0  0.0  
+5.0  0.0  0.0  |  0.0  0.0  0.0  |  0.0  0.0  6.0  
+0.0  0.0  0.0  |  3.0  0.0  1.0  |  0.0  0.0  0.0  
+-------------------------------------------------
+7.0  0.0  5.0  |  0.0  0.0  0.0  |  4.0  0.0  8.0  
+0.0  0.0  0.0  |  0.0  0.0  0.0  |  0.0  0.0  0.0  
+2.0  0.0  8.0  |  0.0  0.0  0.0  |  5.0  0.0  9.0  
+-------------------------------------------------
+0.0  0.0  0.0  |  9.0  0.0  6.0  |  0.0  0.0  0.0  
+6.0  0.0  0.0  |  0.0  0.0  0.0  |  0.0  0.0  2.0  
+0.0  7.0  0.0  |  1.0  0.0  3.0  |  0.0  4.0  0.0  
+
+adding previous model constraints
+Added 58 from previous model(s)
+Added 729 constraints to restrict each cell not to represent two different digits
+Added 729 constraints to restrict each row not to repeat truth values
+Added 729 constraints to restrict each column not to repeat truth values
+Added 729 constraints to restrict each square not to repeat truth values
+There are 3078 assertions
+Unsat!
+There are a total of 1 solutions after removing the first constraint

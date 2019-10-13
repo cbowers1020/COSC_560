@@ -1,0 +1,42 @@
+SMT-LIB Examples
+
+https://rise4fun.com/z3/tutorial
+
+ubuntu installation: sudo apt install z3
+
+
+; Basic Boolean example
+(set-option :print-success false)
+(set-logic QF_UF)
+(declare-const p Bool)
+(assert (and p (not p))) 
+(check-sat) ; returns 'unsat'
+(exit)
+
+
+; Getting values or models
+
+(set-logic QF_LIA)
+(declare-const x Int)
+(declare-const y Int)
+(assert (= (+ x (* 2 y)) 20))
+(assert (= (- x y) 2))
+(check-sat)
+(get-value (x y))
+(exit)
+
+
+-------------------
+z3py
+
+https://ericpony.github.io/z3py-tutorial/guide-examples.htm
+
+pip installation: pip3 install z3-solver
+
+p = Bool('p')
+s = Solver()
+s.add(p or not p)
+
+print(s.check())
+
+print(s.model())
