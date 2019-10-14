@@ -1,0 +1,6 @@
+Number of boolean vars = 300
+Sat!
+
+real	0m14.490s
+user	0m14.392s
+sys	0m0.524s

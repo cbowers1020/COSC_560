@@ -88,9 +88,12 @@ def print_board(rows, cols, vals, bool_vars, model, init=False, on_vars=""):
 
 def is_unique_sol(s, bool_vars, model):
 
+    model_vars = []
     for key in bool_vars.keys():
         if(model[bool_vars[key]]):
-            s.add(Not(bool_vars[key]))
+            model_vars.append(bool_vars[key])
+    
+    s.add(Not(And(model_vars)))
 
     if(s.check() == sat):
         new_model = s.model()
@@ -134,12 +137,12 @@ def sudoku_solver(on_vars, output=True, check_unique=True, model_list=[]):
             print("adding previous model constraints")
         count_vars = 0
         for model in model_list:
-            model_vars = []
-            for key in bool_vars.keys(): 
-                if(model[bool_vars[key]]):
-                    count_vars += 1
-                    model_vars.append(bool_vars[key])
-            s.add(Not(And(model_vars)))
+            # model_vars = []
+            # for key in bool_vars.keys(): 
+            #     if(model[bool_vars[key]]):
+            #         count_vars += 1
+            #         model_vars.append(bool_vars[key])
+            s.add(Not(And(model)))
         if(output):
             print("Added " + str(count_vars) + " from previous model(s)")
 
@@ -283,12 +286,18 @@ def sudoku_solver(on_vars, output=True, check_unique=True, model_list=[]):
                 print("There are more solutions! For example:")
                 print_board(rows, cols, vals, bool_vars, model)
 
-        return True, model
+        # Abstracted model list
+        model_vars = []
+        for key in bool_vars.keys():
+            if(model[bool_vars[key]]):
+                model_vars.append(bool_vars[key])
+
+        return True, model_vars
 
     else:
         if(output):
             print("Unsat!")
-        model = False
+        model = []
         return False, model
 
 
@@ -312,6 +321,8 @@ def main(args):
             if (solvable):
                 model_list.append(new_model)
                 num_sols += 1
+                if (num_sols > 250):
+                    break
             else:
                 break
 

@@ -1,0 +1,48 @@
+This folder contains the files relevant to HW2
+
+COSC560-HW2.pdf
+    - The PDF file defining the homework problems for HW 2
+
+problem5.txt
+    - Answers to the first part of problem 5
+
+sat_problem.txt
+    - A file that defines the SAT problem to solve. 
+    - From random_ksat.py (see below)
+    - DIMACS format
+
+hard_sat_solver.py
+    - A python script that solves a SAT problem as defined by sat_problem.txt in DIMACS format
+    - Takes arguments:
+        - --input_file (default: sat_problem.txt): specifies input file
+        - --output_file: (default: sat_smt_encoding.smt2): output file for problem encoding in smt2
+        - --num_vars: (default: 300): number of variables in SAT problem
+
+sat_smt_encoding.smt2
+    - Output of SAT problem encoded in smt2 formulation
+
+random_ksat.py
+    - file that generates a random k-SAT problem. Takes arguments for literals, clauses, and number of variables.
+    - See file for more info
+
+time_to_z3_complete.txt
+    - Output of hard_sat_solver.py with timing information captured in this file
+
+vcc_verify_Prob2_part3.txt
+    - Code for VCC verification of Problem 2 Part 3
+
+Verify_Prob2_Part3.png
+    - Screenshot showing verification of Problem 2 Part 3
+
+vcc_verifiy_Prob2_Part4.txt
+    - Code for VCC verification of Problem 2 Part 4
+
+Verify_Prob2_Part4.png
+    - Screenshot showing verification of Problem 2 Part 3
+
+README
+    - This file
+
+
+
+
