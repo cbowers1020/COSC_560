@@ -1,0 +1,51 @@
+This is BibTeX, Version 0.99d (TeX Live 2019)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: lit_review.aux
+The style file: ieeetr.bst
+Database file #1: sem_bib.bib
+Warning--empty booktitle in Lien2004FormalMA
+Warning--empty booktitle in Petri1966
+Warning--empty booktitle in Gennaro2001
+Warning--can't use both volume and number fields in Gennaro2001
+You've used 11 entries,
+            1876 wiz_defined-function locations,
+            558 strings with 5345 characters,
+and the built_in function-call counts, 2895 in all, are:
+= -- 266
+> -- 113
+< -- 0
++ -- 42
+- -- 31
+* -- 209
+:= -- 403
+add.period$ -- 11
+call.type$ -- 11
+change.case$ -- 11
+chr.to.int$ -- 0
+cite$ -- 15
+duplicate$ -- 153
+empty$ -- 297
+format.name$ -- 31
+if$ -- 706
+int.to.chr$ -- 0
+int.to.str$ -- 11
+missing$ -- 9
+newline$ -- 36
+num.names$ -- 11
+pop$ -- 56
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 102
+stack$ -- 0
+substring$ -- 172
+swap$ -- 53
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 4
+while$ -- 26
+width$ -- 13
+write$ -- 102
+(There were 4 warnings)

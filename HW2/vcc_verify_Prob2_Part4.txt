@@ -1,18 +1,17 @@
 #include <vcc.h>
 int multiply(int i, int j)
-_(requires i >= 0)
-_(ensures \result <= j * i || \result >= j * i)
+_(requires \forall int i; \forall int j; i+j < 2147483647)
+_(ensures (\result <= j * i || \result >= j * i))
 {
   int l, k;
   l = 0;
   k = 0;
-  _(assert k <= l*j || k >= l*j)
+  
   while(l < i)
   _(invariant l <= i && (k <= l*j || k >= l*j))
   {
     l = l+1;
-    k = _(unchecked)(k+j);
-    _(assert k <= l*j || k >= l*j) 
+    k = k+j;
   }
   return k;
 }

@@ -1,0 +1,53 @@
+\begin{thebibliography}{10}
+
+\bibitem{Lien2004FormalMA}
+E.~Lien, ``Formal modelling and analysis of the norm multicast protocol using
+  real-time maude,'' 2004.
+
+\bibitem{Bochman1980}
+G.~V. Bochman and C.~A. Sunshine, ``Formal methods in communication protocol
+  design,'' {\em IEEE Transactions on Communications}, 1980.
+
+\bibitem{Petri1966}
+C.~A. Petri, ``Communication with automata,'' 1966.
+
+\bibitem{Creese1999}
+S.~J. Creese and J.~Reed, ``Verifying end-to-end protocols using induction with
+  csp/fdr,'' in {\em Parallel and Distributed Processing}, (Berlin,
+  Heidelberg), pp.~1243--1257, Springer Berlin Heidelberg, 1999.
+
+\bibitem{Henzinger2002}
+T.~A. Henzinger, R.~Jhala, R.~Majumdar, and G.~Sutre, ``Lazy abstraction,'' in
+  {\em Proceedings of the 29th ACM SIGPLAN-SIGACT Symposium on Principles of
+  Programming Languages}, POPL '02, (New York, NY, USA), pp.~58--70, ACM, 2002.
+
+\bibitem{rfc2205}
+R.~T. Braden, L.~Zhang, S.~Berson, S.~Herzog, and S.~Jamin, ``{Resource
+  ReSerVation Protocol (RSVP) -- Version 1 Functional Specification}.'' RFC
+  2205, Sept. 1997.
+
+\bibitem{Gorrieri2008}
+R.~Gorrieri, F.~Martinelli, and M.~Petrocchi, ``Formal models and analysis of
+  secure multicast in wired and wireless networks,'' {\em Journal of Automated
+  Reasoning}, vol.~41, pp.~325--364, Nov 2008.
+
+\bibitem{Gennaro2001}
+R.~Gennaro and P.~Rohatgi, ``How to sign digital streams,'' vol.~165,
+  pp.~110--116, Information and Computation, February 2001.
+
+\bibitem{Perrig2000}
+A.~{Perrig}, R.~{Canetti}, J.~D. {Tygar}, and {Dawn Song}, ``Efficient
+  authentication and signing of multicast streams over lossy channels,'' in
+  {\em Proceeding 2000 IEEE Symposium on Security and Privacy. S P 2000},
+  pp.~56--73, May 2000.
+
+\bibitem{Perrig2002}
+A.~Perrig, R.~Szewczyk, J.~Tygar, V.~Wen, and D.~E. Culler, ``Spins: Security
+  protocols for sensor networks,'' {\em Wireless Networks}, vol.~8,
+  pp.~521--534, Sep 2002.
+
+\bibitem{rfc2627}
+E.~J. Harder and D.~M. Wallner, ``{Key Management for Multicast: Issues and
+  Architectures}.'' RFC 2627, June 1999.
+
+\end{thebibliography}

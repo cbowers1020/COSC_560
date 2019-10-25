@@ -1,0 +1,45 @@
+\section{Related Work}
+
+There is surprisingly little work that has focused either on the
+specific mechanisms of geo-filtering or methodologies
+designed to defeat them.  Certainly, there are large,
+organized efforts at enumerating instances of Internet
+censorship~\cite{encore,filasto2012ooni,echo-censorship} and there is
+considerable work that examines methods of bypassing
+blocking~\cite{tor,censorship-sok,censorship-empirical-study}.  However,
+geo-filtering at the server-side is far less well-studied.
+
+Afroz et al.~\cite{afroz2018exploring} performed a large-scale
+measurement study and found that geo-filtering was ubiquitous on the
+Internet.  A large number of commercial VPN providers, including many
+of those listed in Table~\ref{tbl:costs}, advertise their services as
+a means of getting around geo-fences.  Khan et
+al.~\cite{vpn-ecosystem-imc2018} and Weinberg et
+al.~\cite{proxies-geolocation-lying} independently analyzed the VPN
+ecosystem, with both sets of authors concluding that VPN providers
+regularly misrepresent the location of their endpoints.
+Interestingly, however, the misclassification of the endpoints'
+locations due to erroneous geolocation is not by itself problematic
+for users who wish to defeat geofences, so long as the fenced website
+similarly misattributes the VPN endpoint's location.  Poese et
+al.~measure the accuracy of geolocation services and find that errors
+are fairly common~\cite{ip-geolocation-unreliable}.
+
+Numerous efforts have attempted to map out and explore the performance
+of the Internet's domain name system (cf.~studies by Callahan and
+Allman~\cite{callahan2013modern} and Jung et al.~\cite{jung2002dns},
+and measurement platforms such as the RIPE Atlas).  This paper also
+examines DNS performance, but focuses on the costs of choosing remote
+DNS resolvers.  Finally, DNSSEC obviates the benefits of \sdns
+services by preventing the type of forged DNS resolutions on which
+\sdns depends.  However, DNSSEC has seen slow adoption and even the
+resolvers that support DNSSEC often fail to validate the authenticity
+of DNS records~\cite{dnssec-ecosystem}, indicating that \sdns will
+likely continue to function for at least the short-term.
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:
