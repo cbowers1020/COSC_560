@@ -11,6 +11,10 @@ G.~V. Bochman and C.~A. Sunshine, ``Formal methods in communication protocol
 \bibitem{Petri1966}
 C.~A. Petri, ``Communication with automata,'' 1966.
 
+\bibitem{Holzmann1990}
+G.~J. Holzmann, {\em Design and Validation of Computer Protocols}.
+\newblock Upper Saddle River, NJ, USA: Prentice-Hall, Inc., 1991.
+
 \bibitem{Creese1999}
 S.~J. Creese and J.~Reed, ``Verifying end-to-end protocols using induction with
   csp/fdr,'' in {\em Parallel and Distributed Processing}, (Berlin,
@@ -49,5 +53,22 @@ A.~Perrig, R.~Szewczyk, J.~Tygar, V.~Wen, and D.~E. Culler, ``Spins: Security
 \bibitem{rfc2627}
 E.~J. Harder and D.~M. Wallner, ``{Key Management for Multicast: Issues and
   Architectures}.'' RFC 2627, June 1999.
+
+\bibitem{Borujerdi2004}
+M.~Borujerdi and S.~Mirzababaei, ``Formal verification of a multicast protocol
+  in mobile networks.,'' pp.~270--273, 01 2004.
+
+\bibitem{Tan2000}
+C.~L. Tan and S.~Pink, ``Mobicast: A multicast scheme for wireless networks,''
+  {\em Mobile Networks and Applications}, vol.~5, pp.~259--271, Dec 2000.
+
+\bibitem{Smith1997}
+M.~A.~S. Smith, {\em Formal Verification of TCP and T/TCP}.
+\newblock PhD thesis, Cambridge, MA, USA, 1997.
+\newblock AAI0599243.
+
+\bibitem{rfc5740}
+J.~P. Macker, C.~Bormann, M.~J. Handley, and B.~Adamson, ``{NACK-Oriented
+  Reliable Multicast (NORM) Transport Protocol}.'' RFC 5740, Nov. 2009.
 
 \end{thebibliography}
