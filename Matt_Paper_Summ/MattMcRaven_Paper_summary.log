@@ -1,10 +1,10 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019) (preloaded format=pdflatex 2019.5.8)  2 NOV 2019 17:45
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019) (preloaded format=pdflatex 2019.5.8)  2 NOV 2019 18:27
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**lit_review.tex
-(./lit_review.tex
+**MattMcRaven_Paper_summary.tex
+(./MattMcRaven_Paper_summary.tex
 LaTeX2e <2018-12-01>
 (/usr/local/texlive/2019/texmf-dist/tex/latex/IEEEtran/IEEEtran.cls
 Document Class: IEEEtran 2015/08/26 V1.8b by Michael Shell
@@ -543,49 +543,58 @@ File: greek-fontenc.def 2015/08/04 v0.13 Common Greek font encoding definitions
 ))
 Package textgreek Info: Loaded fontmap: {eur/*/*}{U/eur/*/*} {phv/*/*}{U/psy/*/
 *}. on input line 69.
-) (/usr/local/texlive/2019/texmf-dist/tex/latex/titling/titling.sty
-Package: titling 2009/09/04 v2.1d maketitle typesetting
-\thanksmarkwidth=\skip49
-\thanksmargin=\skip50
-\droptitle=\skip51
+) (/usr/local/texlive/2019/texmf-dist/tex/latex/enumitem/enumitem.sty
+Package: enumitem 2019/02/04 v3.8 Customized lists
+\labelindent=\skip49
+\enit@outerparindent=\dimen129
+\enit@toks=\toks17
+\enit@inbox=\box33
+\enit@count@id=\count100
+\enitdp@description=\count101
 )
-(./lit_review.aux)
-\openout1 = `lit_review.aux'.
+(/usr/local/texlive/2019/texmf-dist/tex/latex/titling/titling.sty
+Package: titling 2009/09/04 v2.1d maketitle typesetting
+\thanksmarkwidth=\skip50
+\thanksmargin=\skip51
+\droptitle=\skip52
+)
+(./MattMcRaven_Paper_summary.aux)
+\openout1 = `MattMcRaven_Paper_summary.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for LGR/cmr/m/n on input line 15.
-LaTeX Font Info:    Try loading font information for LGR+cmr on input line 15.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for LGR/cmr/m/n on input line 17.
+LaTeX Font Info:    Try loading font information for LGR+cmr on input line 17.
 
 (/usr/local/texlive/2019/texmf-dist/tex/latex/cbfonts-fd/lgrcmr.fd
 File: lgrcmr.fd 2017/07/29 v1.2 Greek European Computer Regular
 )
-LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    ... okay on input line 17.
 
 -- Lines per column: 46 (approximate, difference = 8.23825pt).
 (/usr/local/texlive/2019/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count100
-\scratchdimen=\dimen129
-\scratchbox=\box33
-\nofMPsegments=\count101
-\nofMParguments=\count102
-\everyMPshowfont=\toks17
-\MPscratchCnt=\count103
-\MPscratchDim=\dimen130
-\MPnumerator=\count104
-\makeMPintoPDFobject=\count105
-\everyMPtoPDFconversion=\toks18
+\scratchcounter=\count102
+\scratchdimen=\dimen130
+\scratchbox=\box34
+\nofMPsegments=\count103
+\nofMParguments=\count104
+\everyMPshowfont=\toks18
+\MPscratchCnt=\count105
+\MPscratchDim=\dimen131
+\MPnumerator=\count106
+\makeMPintoPDFobject=\count107
+\everyMPtoPDFconversion=\toks19
 ) (/usr/local/texlive/2019/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
 Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
 
@@ -638,91 +647,53 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <12> on input line 17.
+(Font)              <12> on input line 19.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <8> on input line 17.
+(Font)              <8> on input line 19.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <6> on input line 17.
-LaTeX Font Info:    Try loading font information for U+lasy on input line 17.
+(Font)              <6> on input line 19.
+LaTeX Font Info:    Try loading font information for U+lasy on input line 19.
 
 (/usr/local/texlive/2019/texmf-dist/tex/latex/base/ulasy.fd
 File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
 ) [1
 
 
-{/usr/local/texlive/2019/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] (./lit_
-review.toc
-LaTeX Font Info:    Calculating math sizes for size <11> on input line 3.
+{/usr/local/texlive/2019/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
+LaTeX Font Info:    Calculating math sizes for size <11> on input line 31.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <11> on input line 3.
+(Font)              <11> on input line 31.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <7.69997> on input line 3.
+(Font)              <7.69997> on input line 31.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5.5> on input line 3.
+(Font)              <5.5> on input line 31.
 
-Underfull \hbox (badness 10000) in paragraph at lines 10--10
- [][] []\OT1/ptm/m/n/11 NACK Ori-ented Re-li-able 
+Underfull \hbox (badness 1603) in paragraph at lines 31--33
+[]\OT1/ptm/m/it/11 Concolic Test-ing\OT1/ptm/m/n/11 : Or, Di-rected Au-to-mated
+
  []
 
-)
-\tf@toc=\write3
-\openout3 = `lit_review.toc'.
+(./MattMcRaven_Paper_summary.bbl) [1
 
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <9> on input line 29.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5> on input line 29.
- [1
-
-] [2] [3] [4]
-Underfull \hbox (badness 3612) in paragraph at lines 81--82
- \OT1/ptm/m/it/11 1) Se-cu-rity: [][] \OT1/ptm/m/n/11 Per-haps some-what sur-pr
-is-ingly,
- []
-
-LaTeX Font Info:    Try loading font information for LGR+ptm on input line 83.
-LaTeX Font Info:    No file LGRptm.fd. on input line 83.
-
-LaTeX Font Warning: Font shape `LGR/ptm/m/n' undefined
-(Font)              using `LGR/cmr/m/n' instead on input line 83.
-
-[5]
-Underfull \vbox (badness 3919) has occurred while \output is active []
-
- [6]
-Underfull \hbox (badness 2142) in paragraph at lines 103--104
-[]\OT1/ptm/m/n/11 This last sec-tion de-tails the ver-i-fi-ca-tion of
- []
-
-[7] (./lit_review.bbl
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
- [8])
-[9
-
-] (./lit_review.aux)
-
-LaTeX Font Warning: Some font shapes were not available, defaults substituted.
-
- ) 
+] (./MattMcRaven_Paper_summary.aux) ) 
 Here is how much of TeX's memory you used:
- 3796 strings out of 492616
- 60953 string characters out of 6129482
- 122509 words of memory out of 5000000
- 7650 multiletter control sequences out of 15000+600000
- 42762 words of font info for 86 fonts, out of 8000000 for 9000
+ 4062 strings out of 492616
+ 65906 string characters out of 6129482
+ 128031 words of memory out of 5000000
+ 7928 multiletter control sequences out of 15000+600000
+ 33986 words of font info for 74 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 41i,8n,25p,1678b,211s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/local/texlive/2019/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/t
-exlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/tex
-live/2019/texmf-dist/fonts/type1/public/cbfonts/grmn1095.pfb></usr/local/texliv
-e/2019/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2019/tex
-mf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2019/texmf-dist/fo
-nts/type1/urw/times/utmri8a.pfb>
-Output written on lit_review.pdf (10 pages, 90676 bytes).
+ 41i,6n,25p,1147b,283s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/local/texlive/2019/texmf-dist/fonts/
+enc/dvips/base/8r.enc}</usr/local/texlive/2019/texmf-dist/fonts/type1/public/am
+sfonts/cm/cmsy10.pfb></usr/local/texlive/2019/texmf-dist/fonts/type1/public/ams
+fonts/cm/cmsy8.pfb></usr/local/texlive/2019/texmf-dist/fonts/type1/urw/times/ut
+mb8a.pfb></usr/local/texlive/2019/texmf-dist/fonts/type1/urw/times/utmr8a.pfb><
+/usr/local/texlive/2019/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on MattMcRaven_Paper_summary.pdf (2 pages, 50374 bytes).
 PDF statistics:
- 58 PDF objects out of 1000 (max. 8388607)
- 40 compressed objects within 1 object stream
+ 32 PDF objects out of 1000 (max. 8388607)
+ 22 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

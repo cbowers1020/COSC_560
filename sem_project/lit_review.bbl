@@ -25,10 +25,24 @@ T.~A. Henzinger, R.~Jhala, R.~Majumdar, and G.~Sutre, ``Lazy abstraction,'' in
   {\em Proceedings of the 29th ACM SIGPLAN-SIGACT Symposium on Principles of
   Programming Languages}, POPL '02, (New York, NY, USA), pp.~58--70, ACM, 2002.
 
+\bibitem{Martina2015}
+J.~E. Martina and L.~C. Paulson, ``Verifying multicast-based security protocols
+  using the inductive method,'' {\em International Journal of Information
+  Security}, vol.~14, pp.~187--204, Apr 2015.
+
 \bibitem{rfc2205}
 R.~T. Braden, L.~Zhang, S.~Berson, S.~Herzog, and S.~Jamin, ``{Resource
   ReSerVation Protocol (RSVP) -- Version 1 Functional Specification}.'' RFC
   2205, Sept. 1997.
+
+\bibitem{Callahan1995}
+J.~R. Callahan and T.~L. Montgomery, ``Verification and validation of a
+  reliable multicast protocol,'' tech. rep., NASA, 1995.
+
+\bibitem{Baptista1990}
+M.~Baptista, S.~Graf, J.-L. Richier, L.~Rodrigues, C.~Rodriguez,
+  P.~Ver{\'\i}ssimo, and J.~Voiron, ``Formal specification and verification of
+  a network independent atomic multicast protocol.,'' pp.~345--352, 01 1990.
 
 \bibitem{Gorrieri2008}
 R.~Gorrieri, F.~Martinelli, and M.~Petrocchi, ``Formal models and analysis of
@@ -54,6 +68,16 @@ A.~Perrig, R.~Szewczyk, J.~Tygar, V.~Wen, and D.~E. Culler, ``Spins: Security
 E.~J. Harder and D.~M. Wallner, ``{Key Management for Multicast: Issues and
   Architectures}.'' RFC 2627, June 1999.
 
+\bibitem{Bella2002}
+G.~Bella, L.~C. Paulson, and F.~Massacci, ``The verification of an industrial
+  payment protocol: The set purchase phase,'' in {\em Proceedings of the 9th
+  ACM Conference on Computer and Communications Security}, CCS '02, (New York,
+  NY, USA), pp.~12--20, ACM, 2002.
+
+\bibitem{Archer2002}
+M.~Archer, ``Proving correctness of the basic tesla multicast stream
+  authentication protocol with tame,'' NRL, 2002.
+
 \bibitem{Borujerdi2004}
 M.~Borujerdi and S.~Mirzababaei, ``Formal verification of a multicast protocol
   in mobile networks.,'' pp.~270--273, 01 2004.
@@ -66,6 +90,20 @@ C.~L. Tan and S.~Pink, ``Mobicast: A multicast scheme for wireless networks,''
 M.~A.~S. Smith, {\em Formal Verification of TCP and T/TCP}.
 \newblock PhD thesis, Cambridge, MA, USA, 1997.
 \newblock AAI0599243.
+
+\bibitem{Anastasi2000}
+G.~Anastasi, A.~Bartoli, N.~De~Francesco, and A.~Santone, ``Efficient
+  verification of a multicast protocol for mobile computing,'' {\em The
+  Computer Journal}, vol.~44, 12 2000.
+
+\bibitem{Milner1989}
+R.~Milner, {\em Communication and Concurrency}.
+\newblock Prentice-Hall, 1989.
+
+\bibitem{Cleaveland1996}
+R.~Cleaveland and S.~Sims, ``The ncsu concurrency workbench,'' in {\em Computer
+  Aided Verification} (R.~Alur and T.~A. Henzinger, eds.), (Berlin,
+  Heidelberg), pp.~394--397, Springer Berlin Heidelberg, 1996.
 
 \bibitem{rfc5740}
 J.~P. Macker, C.~Bormann, M.~J. Handley, and B.~Adamson, ``{NACK-Oriented

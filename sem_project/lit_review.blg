@@ -5,49 +5,51 @@ The style file: ieeetr.bst
 Database file #1: sem_bib.bib
 Warning--empty booktitle in Lien2004FormalMA
 Warning--empty booktitle in Petri1966
+Warning--empty booktitle in Baptista1990
 Warning--empty booktitle in Gennaro2001
 Warning--can't use both volume and number fields in Gennaro2001
+Warning--empty booktitle in Archer2002
 Warning--empty booktitle in Borujerdi2004
 Warning--empty school in Smith1997
-You've used 16 entries,
+You've used 24 entries,
             1876 wiz_defined-function locations,
-            591 strings with 6058 characters,
-and the built_in function-call counts, 4006 in all, are:
-= -- 379
-> -- 151
+            645 strings with 7480 characters,
+and the built_in function-call counts, 6065 in all, are:
+= -- 572
+> -- 239
 < -- 0
-+ -- 57
-- -- 41
-* -- 280
-:= -- 557
-add.period$ -- 19
-call.type$ -- 16
-change.case$ -- 14
++ -- 89
+- -- 65
+* -- 429
+:= -- 851
+add.period$ -- 28
+call.type$ -- 24
+change.case$ -- 22
 chr.to.int$ -- 0
-cite$ -- 22
-duplicate$ -- 209
-empty$ -- 409
-format.name$ -- 41
-if$ -- 980
+cite$ -- 32
+duplicate$ -- 320
+empty$ -- 613
+format.name$ -- 65
+if$ -- 1477
 int.to.chr$ -- 0
-int.to.str$ -- 16
-missing$ -- 13
-newline$ -- 54
-num.names$ -- 16
-pop$ -- 78
+int.to.str$ -- 24
+missing$ -- 21
+newline$ -- 79
+num.names$ -- 26
+pop$ -- 113
 preamble$ -- 1
 purify$ -- 0
 quote$ -- 0
-skip$ -- 140
+skip$ -- 205
 stack$ -- 0
-substring$ -- 232
-swap$ -- 72
+substring$ -- 348
+swap$ -- 107
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 0
-warning$ -- 6
-while$ -- 36
-width$ -- 18
-write$ -- 149
-(There were 6 warnings)
+warning$ -- 8
+while$ -- 56
+width$ -- 26
+write$ -- 225
+(There were 8 warnings)
