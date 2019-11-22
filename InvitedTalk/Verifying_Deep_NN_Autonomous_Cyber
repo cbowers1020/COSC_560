@@ -1,0 +1,21 @@
+Verifying Deep Neural Networks in Autonomous Cyber-Physical Systems
+
+Taylor T. Johnson
+
+VeriVITAL
+The Verification and Validation for INtelligent and Trustworthy Autonomy Laboratory
+
+Questions: 
+- I asked a question in regards to his self driving car safety question?
+- Question about output space verification providing feedback into training the NN better to be more resilient to perturbation attacks.
+
+Safety properties are of primary interest
+
+Some reachability properties
+
+LEC Verification
+
+From some set of input and a resulting output set, see if output set is in property space
+
+RELU network can compute layer by layer
+
