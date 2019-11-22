@@ -1,0 +1,467 @@
+*** RTT collection and GRTT measurement and announcement
+
+*** Purpose of GRTT measurement: GRTT is used by sender and
+*** receivers as a common basis for setting their timeouts.
+
+*** Sender actions:
+*** - initializes session by sending a series of CMD(CC)'s
+*** - sends CMD(CC)'s wich contain a timestamp
+*** - collect adjusted timestamps from the receivers
+*** - use these timestamps to calculate GRTT
+*** - announce GRTT to the receivers in every CMD(CC) message
+
+*** Receiver actions:
+*** - receive CMD(CC)'s and record the timestamp and time of
+***   reception of CMD(CC)
+*** - return an adjusted version of the timestamp when generating
+***   explicit (ACK) or implicit (NACK) feedback
+*** - update its GRTT attribute every time a CMD(CC) message arrives
+
+*** Comments:
+*** - the updating of the timers is done where the timers are used:
+***   namely in the data subprotocol
+*** - the advertised GRTT must be at least as big as the inter-packet
+***   transmission time given the sender's current transmission rate
+*** - all rules for RTTreceiverAlone and RTTsenderAlone must be 
+***   redefined for the combined protocol.
+
+*** Questions:
+*** - should the initializing CCs be put in the data component? NO
+*** - should I put the GRTT announcement and receiver reception
+***   in the data component? YES, partly: Announcement via the other
+***   messages is done in the data transmission component.
+
+
+load common.rtmaude
+
+
+(tomod NORM-RTT is
+  inc NAT-TIME-DOMAIN-WITH-INF .
+  inc TIMED-OO-SYSTEM . inc DETERMINISTIC-TICK-RULE .
+  inc MESSAGES .  
+  inc NODES . inc NETWORK .
+  inc TIMEOUT-FUNCTIONS . 
+
+
+  vars S R O O' : Oid . var OS : OidSet .
+  vars N N' N'' N''' N'''' : Nat . vars NZN NZN' : NzNat .
+  vars T T' T'' T''' T'''' : Time . var NZT : NzTime .
+  vars TI TI' : TimeInf .
+  var DUIL : DataUnitIdList . var M : Msg . vars ML ML' : MsgList .
+  vars B B' : Bool .
+
+
+
+  *** THE SENDER:
+
+
+  class RTTsender |
+    sendRateInKbps : Nat, *** transmission rate in kbps
+    CCtransTimer : TimeInf,
+    peakRTT : Time, *** peak value is kept for every new timestamp
+    CLRresponse : Bool, ***true if peakRTT came from CLR
+    lowPeakRTTcounter : Nat . ***counts the periods where peakRTT is lower
+                           ***than current grtt.
+
+  *** Inherits the following attributes from its superclasses:
+  *** clock, NormRobustFactor, GRTT, gsize, children, sendRate.
+    
+  subclass RTTsender < Sender .
+
+  class RTTsenderAlone . subclass RTTsenderAlone < RTTsender . 
+
+
+
+  *** INITIALIZE RTT COLLECTION
+
+
+  *** The sender starts with a GRTT estimate of 500 ms and
+  *** the first CCs are sent once pr. every 500 ms until
+  *** some receiver provides feedback
+
+  crl [initializeRTTcollection] :
+    < S : RTTsender |
+      children : OS, clock : T, sendRateInKbps : N, GRTT : 500, 
+      sendRate : T', CCtransTimer : TI, peakRTT : 0 >
+    =>
+    < S : RTTsender | 
+      CCtransTimer : 500 >
+    (multisend CC(T, max(500, T'), N) from S to OS)
+    if TI == INF or TI == 0 .
+
+
+
+  *** UPDATING GRTT AT THE END OF THE RTT COLLECTION PERIOD
+
+
+  *** Sends CCs which contain a timestamp. Sent once pr. every GRTT.
+  *** However, if peakRTT is provided by a CLR and is equal to or larger
+  *** than sendRate, this value is used. If there is no peakRTT from CLR
+  *** and GRTT is less than sendRate, the sendRate value is used.
+  *** The sender advertises the most recent GRTT estimate provided it is not 
+  *** less
+  *** than the current data packet rate - in that case it advertises that
+  *** rate instead.
+
+  crl [endOfRTTcollectionPeriod] :
+    < S : RTTsender |
+      children : OS, clock : T, GRTT : T'',
+      sendRate : T''', sendRateInKbps : N', CCtransTimer : 0, 
+      peakRTT : T', CLRresponse : B, lowPeakRTTcounter : N >
+    =>
+    (if B == true and T''' <= T'
+    then
+    (< S : RTTsender |
+       CCtransTimer : T',
+       peakRTT : (if (T' >= T'') then 0 else T' fi), 
+       lowPeakRTTcounter : (if ((T' >= T'') or (N == 2)) 
+                           then 0 else (N + 1) fi),
+       GRTT : (if ((T' < T'') and (N == 2)) then updateGRTT(T'', T') 
+              else T'' fi) > 
+    *** The CC contains the most recent GRTT estimate
+ (multisend CC(T, max((if ((T' < T'') and (N == 2)) then updateGRTT(T'', T') 
+               else T'' fi) , T'''), N') from S to OS))
+     else
+    (< S : RTTsender |
+       CCtransTimer : max((if ((T' < T'') and (N == 2)) then 
+         updateGRTT(T'', T') else T'' fi), T'''),
+       peakRTT : (if (T' >= T'') then 0 else T' fi), 
+       lowPeakRTTcounter : (if ((T' >= T'') or (N == 2)) 
+                           then 0 else (N + 1) fi),
+       GRTT : (if ((T' < T'') and (N == 2)) then updateGRTT(T'', T') 
+              else T'' fi) > 
+ (multisend CC(T,  max((if ((T' < T'') and (N == 2)) then updateGRTT(T'', T') 
+               else T'' fi), T'''), N') from S to OS)) fi)
+    if T' =/= 0 or (T' == 0 and T'' < 500) .
+
+
+
+  *** UPDATING GRTT DURING THE RTT COLLECTION PERIOD
+
+
+  *** Receivers provide feedback in ACK and NACK messages. If received RTT
+  *** value (new peak) is larger than grtt and current peak, grtt
+  *** is updated immediately. If not, the new value is simply recorded.
+
+  var RECEIVED-RTT : Time .
+
+  *** Receives explicit feedback, i.e. ACKs. 
+  crl [receiveAdjustedTimestamp1] :  
+    (outOfLink ACK(T, N, B) from O to S)
+    < S : RTTsender |
+      clock : T', GRTT : T''', peakRTT : T'' >
+    =>
+    (if RECEIVED-RTT > T''' and RECEIVED-RTT > T'' ***currTime - grttResponse
+    then
+     *** update GRTT 
+    < S : RTTsender |
+      peakRTT : RECEIVED-RTT, CLRresponse : B,
+      GRTT : updateGRTT(T''', RECEIVED-RTT) >
+    else 
+     *** keep new peak if larger than old peak
+    < S : RTTsender |
+      peakRTT : (if RECEIVED-RTT > T''
+                 then RECEIVED-RTT else T'' fi), 
+      CLRresponse : B > fi) 
+  if RECEIVED-RTT := (T' monus T) .
+
+
+
+  *** Receives implicit feedback, i.e. NACKs. 
+  crl [receiveAdjustedTimestamp2] :  
+    (outOfLink NACK(DUIL, T, B) from O to S)
+    < S : RTTsenderAlone |
+      clock : T', GRTT : T''', peakRTT : T'' >
+    =>
+    (if RECEIVED-RTT > T''' and RECEIVED-RTT > T''
+    then
+     *** update GRTT 
+    < S : RTTsenderAlone |
+      peakRTT : RECEIVED-RTT, CLRresponse : B,
+      GRTT : updateGRTT(T''', RECEIVED-RTT) >
+    else 
+     *** keep new peak if larger than old peak
+    < S : RTTsenderAlone |
+      peakRTT : (if RECEIVED-RTT > T''
+                 then RECEIVED-RTT else T'' fi),
+      CLRresponse : B > fi)
+  if RECEIVED-RTT := (T' monus T) .
+
+
+
+  *** CALCULATE NEW GRTT 
+
+
+  *** The GRTT estimate is updated using current peak receiver RTT
+  *** updateGRTT(GRTTestimate, peakRTT) -> newGrtt
+
+  op updateGRTT : Nat Nat -> Time .
+
+  eq updateGRTT(N, N') =
+    nat(if N' > N then 1/4 * N + 3/4 * N'
+                  else 3/4 * N + 1/4 * N' fi) .
+
+  *** THE RECEIVER:
+
+
+  class RTTreceiver |
+    ACKtimer : TimeInf, ***holdoff timeout before sending feedback
+    ACKholdoffTimer : TimeInf,
+    timestamp : Time, 
+    receivedTimestamp : Time,
+    rcvRateInKbps : Nat, *** reception rate in kbps
+    sndRateInKbps : Nat . ***sender's rate, advertised in CC
+
+  *** Inherits the following attributes from its superclasses:
+  *** clock, NormRobustFactor, GRTT, gsize, parent, randomSeed, CLR.
+
+  subclass RTTreceiver < Receiver .
+
+
+  *** The subclass RTTreceiverAlone has a list of NACKs used in
+  *** simulating the suppression of ACK feedback in the stand-alone
+  *** component:
+
+  class RTTreceiverAlone | nacksToBeSent : MsgList .
+  subclass RTTreceiverAlone < RTTreceiver .
+
+
+  *** Used in stand-alone mode to simulate NACKs:
+  msg NACK : -> ControlPacket .  
+
+
+
+  *** CLR FEEDBACK:
+
+  
+  *** The CLR (current limiting receiver) is dynamically chosen 
+  *** during a session via congestion control. My model doesn't 
+  *** provide congestion control, but a (static) CLR can be 
+  *** defined for an initial state. 
+
+
+  *** CLR provides feedback immediately when it receives a CC.
+  *** Both its timers are off from the start and the CLR doesn't
+  *** have a holdoff period after replying to the CC.
+
+  rl [CLRfeedback] :
+    (outOfLink CC(T, T', N) from O to R)
+    < R : RTTreceiver | 
+      parent : O, clock : T'', GRTT : T''', 
+      CLR : true, rcvRateInKbps : N' >
+    =>
+    < R : RTTreceiver | 
+      GRTT : T', sndRateInKbps : N, 
+      timestamp : T, receivedTimestamp : T'' >
+    (intoLink ACK(T, N', true) from R to O) .
+
+
+
+  *** NON-CLR FEEDBACK:
+
+  *** STARTS RTT FEEDBACK CYCLE 
+
+
+  *** Receives CC and sets its ACKtimer if both
+  *** ACKtimer and ACKholdoffTimer are off.
+
+  rl [initializeACKcycle] : 
+    (outOfLink CC(T, T'', N) from O to R)
+    < R : RTTreceiver |
+      clock : T', gsize : NZN, randomSeed : N', 
+      NormRobustFactor : NZN', rcvRateInKbps : N'', 
+      ACKtimer : INF, ACKholdoffTimer : INF, CLR : false >  
+    =>
+    < R : RTTreceiver |
+      timestamp : T, receivedTimestamp : T', GRTT : T'',
+      randomSeed : random(N'), sndRateInKbps : N,  
+      ACKtimer : RTTbackoff(random(N'), NZN', T'', NZN, N'', N) > .
+
+
+
+  *** IGNORES CCS WHILE ACK TIMER IS RUNNING
+
+
+  *** This is not stated explicitly in the specification, but
+  *** I assume that if the receiver receives a CC while its ACKtimer
+  *** is running, it simply stores the new GRTT value.
+
+  rl [receivesCCduringBackoffTimeout] :
+    (outOfLink CC(T, T', N) from O to R)
+    < R : RTTreceiver |
+      ACKtimer : NZT >
+    =>
+    < R : RTTreceiver | GRTT : T' > .
+
+
+
+  *** CANCELS ACK DURING CYCLE
+
+
+  *** Cancels ACK because it is about to send a NACK. Includes adjusted
+  *** timestamp in NACK. Sets ACKholdoffTimer. (This rule makes sure that
+  *** a pending NACK is sent even though the receiver is NOT in an
+  *** ACK cycle - otherwise our model won't work. As a result, feedback
+  *** will be sent even though ACKholdoffTimer is running.)
+
+  rl [cancelACK1] :
+    < R : RTTreceiverAlone |
+      parent : O, clock : T, timestamp : T', receivedTimestamp : T'',
+      ACKtimer : TI, ACKholdoffTimer : TI',
+      NormRobustFactor : NZN, GRTT : N,
+      nacksToBeSent : dly(NACK, 0) ++ ML, CLR : B >
+    =>
+    < R : RTTreceiverAlone |
+      ACKtimer : (if TI =/= INF and TI =/= 0 then INF else TI fi), 
+      ACKholdoffTimer : (if TI =/= INF and TI =/= 0 
+                         then NZN * N else INF fi), 
+      nacksToBeSent : ML >
+    (intoLink NACK(nil, (if T' == 0 then 0 else T' + (T monus T'') fi), B) 
+    from R to O) .
+
+
+    
+  *** Cancels ACK because another receiver who has sent an ACK has a
+  *** c-c-rate close to or less than the receiver's own rate. The 
+  *** c-c-rate is announced in ACK messages. Sets ACKholdoffTimer.
+
+  rl [cancelACK2] : 
+    (outOfLink ACK(T, N, B) from O to R)
+    < R : RTTreceiver |
+      rcvRateInKbps : N', ACKtimer : NZT,
+      ACKholdoffTimer : INF,
+      NormRobustFactor : NZN, GRTT : NZN' >     
+    =>
+    (if N' > (N monus (N quo 10)) 
+    *** cancelled if the competing rate is sufficiently close to or less 
+    *** than N', i.e. N' > N * 0,9 
+    then
+    < R : RTTreceiver | ACKtimer : INF, ACKholdoffTimer : NZN * NZN' >
+    else
+    < R : RTTreceiver | > fi) .
+
+
+
+  *** END OF CYCLE
+
+
+  *** ACKtimer expires. Sends ACK with adjusted version of the 
+  *** timestamp and sets ACKholdoffTimer. 
+  *** Adjusts timestamp : timestamp + (currTime - recvTime)
+
+  rl [sendAjustedTimestamp] :
+    < R : RTTreceiver |
+      parent : O, clock : T, timestamp : T', receivedTimestamp : T'',
+      rcvRateInKbps : N, NormRobustFactor : NZN, GRTT : NZN',  
+      ACKtimer : 0, ACKholdoffTimer : INF >
+    =>
+    < R : RTTreceiver |
+      ACKtimer : INF, ACKholdoffTimer : NZN * NZN' >
+    (intoLink ACK(T' + (T monus T''), N, false) from R to O) .
+
+
+ 
+  *** "IGNORE" CCS DURING CC HOLDOFF PERIOD
+
+
+  *** If the receiver receives a CC message after it has sent an ACK 
+  *** and is in a holdoff period, it simply records the new GRTT value
+  *** from the sender.
+
+  rl [receivesCCduringHoldoff] :
+    (outOfLink CC(T, T', N) from O to R)
+    < R : RTTreceiver |
+      ACKtimer : INF, ACKholdoffTimer : NZT >
+    =>
+    < R : RTTreceiver | GRTT : T' > .
+
+
+
+  *** IGNORE ACK AND NACK MESSAGES FROM OTHER RECEIVERS 
+  *** (BOTH NON-CLR AND CLR)
+
+
+  *** Non-CLRs ignore ACKs from other receivers while ACKholdoffTimer 
+  *** is running (because it is in an ACK cycle) or if both timers are 
+  *** turned off (is passive). CLR always ignores ACKs from others. 
+
+  crl [ignoreACK] :
+    (outOfLink ACK(T, N, B) from O to R)
+    < R : RTTreceiver |
+      ACKtimer : INF, ACKholdoffTimer : TI, CLR : B' >
+    =>
+    < R : RTTreceiver | >
+    if (TI =/= 0) or (TI == INF) or (B' == true) . 
+
+
+
+  *** Non-CLRs ignore NACKs from other receivers while
+  *** ACKholdoffTimer is running or if both timers are turned off. 
+  *** CLR always ignores NACKs from others.
+
+  crl [ignoreNACK1] :
+    (outOfLink NACK(DUIL, T, B) from O to R)
+    < R : RTTreceiverAlone |
+      ACKtimer : INF, ACKholdoffTimer : TI, CLR : B' >
+    =>
+    < R : RTTreceiverAlone | >
+    if (TI =/= 0) or (TI == INF) or (B' == true) . 
+
+
+
+  *** This rule states that a receiver whose ACKtimer is running
+  *** should ignore incoming NACKs from other receivers. I've included
+  *** this rule because it is necessary to make the model work. It
+  *** would be more logical to use the information in an incoming NACK to 
+  *** possibly cancel the pending ACK, but the specification says
+  *** nothing about this.
+  *** That is also why my NACKs don't contain this extra information.
+
+  rl [ignoreNACK2] :
+    (outOfLink NACK(DUIL, T, B) from O to R)
+    < R : RTTreceiverAlone |
+      ACKtimer : NZT, ACKholdoffTimer : INF >
+    =>
+    < R : RTTreceiverAlone | > .
+
+
+
+  *** I need this rule to turn off the holdoff timer so that 
+  *** the receiver can start a new ACK cycle should a CC arrive.
+
+  rl [turnOffACKholdoffTimer] : 
+    < R : RTTreceiver | ACKholdoffTimer : 0 >
+    =>
+    < R : RTTreceiver | ACKholdoffTimer : INF > .  
+
+
+
+  *** THE EFFECT OF TIME (THE DELTA FUNCTION)
+
+
+  eq delta(< S : RTTsenderAlone | clock : T, CCtransTimer : TI >, T') =
+    < S : RTTsenderAlone | clock : T + T', CCtransTimer : TI monus T' > .
+  eq delta(< R : RTTreceiverAlone | 
+      clock : T, ACKtimer : TI, ACKholdoffTimer : TI',
+      nacksToBeSent : ML >, T') =
+    < R : RTTreceiverAlone | clock : T + T', ACKtimer : TI monus T',
+      ACKholdoffTimer : TI' monus T', nacksToBeSent : delta(ML, T') > .
+
+
+
+  *** MAXIMAL POSSIBLE TIME ELAPSE (THE MTE FUNCTION)
+
+
+  eq mte(< S : RTTsenderAlone | CCtransTimer : TI >) = TI .
+  eq mte(< R : RTTreceiverAlone | 
+    ACKtimer : TI, ACKholdoffTimer : TI', nacksToBeSent : ML >) =
+    if TI == INF and TI' == INF then INF 
+    else min(min(TI, TI'), leastDly(ML)) fi . ***ok? 
+
+
+
+endtom)
+
+
+
+

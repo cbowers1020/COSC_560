@@ -1,0 +1,1238 @@
+*** ORDINARY DATA TRANSMISSION, NACKING AND REPAIR
+*** (DT COMPONENT)
+
+
+*** Sender actions:
+*** - transmission of new data from the application
+*** - flushing at the end of buffered new data
+*** - accumulating NACKs from receivers
+*** - repair transmission in response to NACKs
+*** - squelching of requests for invalid data 
+
+*** Receiver actions:
+*** - receiving data and forwarding to the application
+*** - record missing segments during reception
+*** - initiate NACK cycle at object boundary or upon receiving 
+***   a CMD(FLUSH).
+*** - forwarding repair data along with ordinary data
+***   to the application.
+*** - cancel invalid repair requests if it receives a CMD(SQUELCH)
+
+
+  load common.rtmaude
+
+
+***************************************************
+
+
+*** SENDER AND RECEIVER APPLICATIONS
+
+
+(tomod APPLICATIONS is
+  inc MESSAGES . 
+
+  *** The sender application has a list of objectBlocks in its
+  *** data buffer, which are fetched by the protocol.
+
+  class SenderApplication | dataBuffer : MsgList . 
+
+
+  *** The receiver application receives data segments in order,
+  *** represented by their data unit ids.
+
+  class ReceiverApplication | 
+    receiver : Oid, dataBuffer : DataUnitIdList .
+
+
+  *** DELTA AND MTE FOR APPLICATIONS
+
+  var A : Oid . var T : Time .
+
+  eq delta(< A : SenderApplication | >, T) = < A : SenderApplication | > .
+  eq mte(< A : SenderApplication | >) = INF .  
+
+  eq delta(< A : ReceiverApplication | >, T) = < A : ReceiverApplication | > .
+  eq mte(< A : ReceiverApplication | >) = INF .
+
+
+endtom)
+
+
+****************************************************
+
+
+*** NORM PROTOCOL SENDER AND RECEIVER
+
+
+(tomod NORM-DATA-TRANSMISSION is
+  inc NAT-TIME-DOMAIN-WITH-INF .
+  inc TIMED-OO-SYSTEM .
+  inc DETERMINISTIC-TICK-RULE .
+  inc TIMEOUT-FUNCTIONS .
+  inc MESSAGES . 
+  inc NODES .
+  inc NETWORK .
+  inc APPLICATIONS .
+  inc EXT-BOOL .
+
+
+  vars A A' S R O : Oid . var OS : OidSet .
+  vars M M' : Msg . var DP DP' DP'' : DataPacket . 
+  vars ML ML' ML'' : MsgList .
+  vars T T' : Time . vars TI TI' TI'' TI''' : TimeInf .
+  vars N N' N'' N''' : Nat . 
+  vars NZN NZN' NZN'' NZN''' NZN'''' NZN''''' NZN'''''' : NzNat .
+  vars DUI DUI' DUI'' : DataUnitId . 
+  vars DUIL DUIL' DUIL'' : DataUnitIdList .
+  vars B B' : Bool .
+
+
+  *** THE SENDER ***
+
+
+  class DTsender |
+    dataBuffer : Msg,
+    flushBuffer : Msg, 
+    repairTransmission : DataUnitIdList, ***rep. reqs being transmitted 
+    currentTransPos : DataUnitId, *** current transmission position
+    lastNewDataId : DataUnitId,
+    lastRepairDataId : DataUnitId,
+    dataTransTimer : TimeInf, *** determinded by sendRate
+    accNACKcontent : DataUnitIdList, *** accumulated NACK content
+    invalidRepairRequests : DataUnitIdList,
+    NACKaccumTimer : TimeInf, ***((K+1)*GRTT)
+    repairCycleHoldoffTimer : TimeInf, *** 1*GRTT
+    FLUSHtimer : TimeInf, *** 2*GRTT
+    FLUSHcounter : Nat,  *** NormRobustFactor times
+    SQUELCHholdoffTimer : TimeInf . *** 2*GRTT
+
+  *** Inherits the following attributes from its superclasses:
+  *** clock, NormRobustFactor, GRTT, gsize, children, sendRate.  
+
+  subclass DTsender < Sender .
+
+  class DTsenderAlone . subclass DTsenderAlone < DTsender .
+
+
+
+  *** DATA OBJECTS
+
+
+  *** NORM data objects.
+  *** Usage: OBJECT(objectId, noOfSegsInObject, noOfSegsTransmitted)
+  msg OBJECT : NzNat NzNat Nat -> Msg .
+
+
+
+  *** Blocks of objects: objectBlock(listOfOBJECTs)
+  *** (This is the content of a sender's dataBuffer and flushBuffer
+  *** in the data transmission component.) 
+  msg objectBlock : MsgList -> Msg . 
+  msg noObjectBlock : -> Msg .  
+
+
+  *** TRANSMISSION OF NEW DATA
+
+
+  *** When the sender's transmission buffer is empty, the application
+  *** process gives the sender a new block of objects.
+
+  rl [nextObjectBlock] :
+    < A : SenderApplication | dataBuffer : M ++ ML >
+    < S : DTsender | dataBuffer : noObjectBlock >
+    =>
+    < A : SenderApplication | dataBuffer : ML >
+    < S : DTsender | dataBuffer : M > .
+
+
+
+  *** Transmits the first segment of the next, previously 
+  *** untransmitted, object.
+
+  crl [transmitFirstSegOfObject] :
+    < S : DTsenderAlone | 
+      children : OS, GRTT : T,  
+      dataBuffer : objectBlock(ML ++ OBJECT(NZN, NZN', 0) ++ ML'),
+      lastNewDataId : N :: N', sendRate : T', dataTransTimer : TI,
+      repairTransmission : nil >
+    =>
+    < S : DTsenderAlone |
+      currentTransPos : s(N) :: 1,
+      dataBuffer : objectBlock(ML ++ OBJECT(NZN, NZN', 1) ++ ML'),
+      lastNewDataId : s(N) :: 1, dataTransTimer : T' >
+    (multisend DATA(s(N) :: 1, NZN', T, false) from S to OS) 
+    if s(N) == NZN /\ allSegsTransmitted(ML) /\ (TI == INF or TI == 0) .    
+
+
+
+  *** Transmits the rest of the current object. If the last
+  *** segment of the very last object has been sent, the 
+  *** dataTransTimer is turned off.
+
+  crl [transmitRestOfObject] :
+    < S : DTsender |
+      children : OS, GRTT : T, 
+      dataBuffer : objectBlock(ML' ++ OBJECT(NZN, NZN', NZN'') ++ ML''),
+      lastNewDataId : NZN :: NZN'', sendRate : T', dataTransTimer : 0,
+      repairTransmission : nil >
+    =>
+    < S : DTsender |
+      currentTransPos : NZN :: s(NZN''),
+      dataBuffer : 
+        objectBlock(ML' ++ OBJECT(NZN, NZN', s(NZN'')) ++ ML''),
+      lastNewDataId : NZN :: s(NZN''),
+      dataTransTimer : 
+        (if ML'' == nil and s(NZN'') == NZN' then INF else T' fi) >
+    (multisend DATA(NZN :: s(NZN''), NZN', T, false) from S to OS)
+    if NZN'' < NZN' . 
+
+
+      
+  *** FLUSH PROCESS
+
+
+  *** When the sender reaches the end of transmission of enqueued 
+  *** new data content and repair messages, it sends the first
+  *** FLUSH for the data content and moves the transmitted 
+  *** objects to the flush buffer. If the transmission is done,
+  *** i.e., the application's buffer is empty, the sender sets
+  *** the end-of-transmission flag. This is written as a global
+  *** rule to make sure that the rewrite is only performed on 
+  *** an object configuration - otherwise the FLUSH might be sent
+  *** into the link before the last segment of the enqueued data.
+  *** (Can it be in a NACK accumulation
+  *** period even though it has no enqueued repair messages?) 
+
+  crl [initiateFlushProcess] :
+   {< A : SenderApplication | dataBuffer : ML > 
+    < S : DTsender |
+      children : OS, GRTT : T,
+      dataBuffer : objectBlock(ML'), flushBuffer : noObjectBlock,
+      FLUSHcounter : 0, FLUSHtimer : INF,  
+      NACKaccumTimer : INF, repairTransmission : nil >
+    OC:ObjectConfiguration}
+    =>
+   {< A : SenderApplication | >
+    < S : DTsender |
+      dataBuffer : noObjectBlock, flushBuffer : objectBlock(ML'),
+      FLUSHcounter : 1, FLUSHtimer : 2 * T >
+    (multisend FLUSH(lastDataUnitId(objectBlock(ML')), T,
+                     (if ML == nil then true else false fi)) 
+     from S to OS) 
+    OC:ObjectConfiguration}
+    if allSegsTransmitted(ML') .
+
+
+
+  *** The sender transmits a FLUSH every 2*GRTT. The total number 
+  *** of FLUSH messages sent is determined by the NormRobustFactor. 
+  *** When it has completed flushing, it resets the FLUSHcounter 
+  *** and empties the flushBuffer.
+
+  crl [flushProcess] :
+   {< A : SenderApplication | dataBuffer : ML >
+    < S : DTsender |
+      children : OS, NormRobustFactor : NZN, GRTT : T,
+      dataBuffer : M, flushBuffer : M', 
+      FLUSHcounter : N, FLUSHtimer : 0, 
+      NACKaccumTimer : INF, repairTransmission : nil >
+    OC:ObjectConfiguration}
+    =>
+   {< A : SenderApplication | >
+    < S : DTsender |
+      flushBuffer : (if s(N) == NZN then noObjectBlock else M' fi),
+      FLUSHcounter : (if s(N) == NZN then 0 else s(N) fi), 
+      FLUSHtimer : (if s(N) == NZN then INF else 2 * T fi) >
+    (multisend FLUSH(lastDataUnitId(M'), T, 
+      (if ML == nil and M == noObjectBlock then true else false fi)) 
+     from S to OS)
+    OC:ObjectConfiguration}
+    if M' =/= noObjectBlock /\ N < NZN .
+
+
+
+  *** NACK ACCUMULATION PERIOD
+
+
+  *** If a NACK arrives during ordinary or repair transmission,
+  *** the sender sets its NACKaccumTimer, provided the 
+  *** repairCycleHoldoffTimer is off, it is not already in a
+  *** NACK accumulation period and there are valid repair requests 
+  *** in the NACK content. If it is about to send a FLUSH,
+  *** it stops the flush process.
+
+  crl [beginNACKaccumulation] :
+    (outOfLink NACK(DUIL, T, B) from O to S)
+    < S : DTsenderAlone |
+      NormRobustFactor : NZN, GRTT : T',
+      dataBuffer : M, flushBuffer : M', 
+      accNACKcontent : nil, NACKaccumTimer : INF, 
+      invalidRepairRequests : DUIL',
+      repairCycleHoldoffTimer : TI >
+    =>
+    (if keepValidReqs(DUIL, M', M) == (nil).DataUnitIdList
+     then 
+      *** there are no valid requests, so the sender doesn't
+      *** start a NACK accumulation period
+    < S : DTsenderAlone |
+      invalidRepairRequests : addDUIlist(DUIL, DUIL') >
+     else
+     *** there are valid repair requests and the sender sets
+     *** its NACKaccumTimer
+    < S : DTsenderAlone |
+      accNACKcontent : keepValidReqs(DUIL, M', M), 
+      NACKaccumTimer : (NZN + 1) * T', 
+      invalidRepairRequests : 
+        addDUIlist(keepInvalidReqs(DUIL, M', M), DUIL'), 
+      repairCycleHoldoffTimer : INF,
+      FLUSHcounter : 0, FLUSHtimer : INF > fi)
+    if TI == INF or TI == 0 
+    /\ not(M == noObjectBlock and M' == noObjectBlock) .
+
+
+
+  *** The sender aggregates NACK info while the accumulation
+  *** timer is running.
+
+  crl [NACKaccumulationPeriod] :
+    (outOfLink NACK(DUIL, T, B) from O to S)
+    < S : DTsenderAlone | 
+      dataBuffer : M, flushBuffer : M',
+      accNACKcontent : DUIL', NACKaccumTimer : TI,
+      invalidRepairRequests : DUIL'' >
+    =>
+    < S : DTsenderAlone |
+      accNACKcontent : addDUIlist(keepValidReqs(DUIL, M', M), DUIL'),
+      invalidRepairRequests : 
+        addDUIlist(keepInvalidReqs(DUIL, M', M), DUIL'') >
+    if TI =/= INF /\ TI =/= 0 . 
+
+
+
+  *** REPAIR TRANSMISSON
+
+
+  *** When the NACKaccumTimer expires, the sender halts transmission
+  *** of new data content. It uses the accumulated NACK content to
+  *** determine the repair transmission. At
+  *** the same time it sets its holdoff timer. (When the repair
+  *** transmission is over it can resume transmission of new data.)
+  *** The data transmission timer may be off because ordinary data
+  *** transmission is completed, in which case the sender resets the 
+  *** timer. 
+
+  rl [endOfNACKaccumulation] :
+    < S : DTsender |
+      GRTT : T, dataBuffer : M, flushBuffer : M', 
+      repairTransmission : DUIL, accNACKcontent : DUIL',
+      NACKaccumTimer : 0, repairCycleHoldoffTimer : INF,
+      sendRate : T', dataTransTimer : TI >
+    =>
+    < S : DTsender | 
+      repairTransmission : 
+        addDUIlist(replaceObjReq(DUIL', M, M'), DUIL), 
+      accNACKcontent : nil,
+      NACKaccumTimer : INF, repairCycleHoldoffTimer : T,
+      *** If TI = INF, then TI is set to the send rate,
+      *** otherwise we keep the current value of TI:
+      dataTransTimer : min(T', TI) > .
+
+
+
+  *** Actual repair transmission starts in this rule. When 
+  *** there is content in the repair buffer, the sender starts 
+  *** transmitting DATA messages with repair content, one for each 
+  *** segment requested. If there is content in the flushBuffer,
+  *** the flush process has not been completed and is reinitiated.
+  *** If both ordinary and repair data
+  *** transmission is completed, i.e. neither the application nor 
+  *** the sender has any more data enqueued and flushing is completed,
+  *** then the data transmission timer is turned off. 
+
+  rl [repairTransmission] : 
+    < A : SenderApplication | dataBuffer : ML >
+    < S : DTsender |
+      children : OS, GRTT : T, sendRate : T', 
+      dataBuffer : M, flushBuffer : M', 
+      repairTransmission : DUI ; DUIL,
+      NormRobustFactor : NZN, dataTransTimer : 0, FLUSHtimer : INF >
+      =>
+    < A : SenderApplication | >
+    < S : DTsender |
+      currentTransPos : DUI, lastRepairDataId : DUI, 
+      repairTransmission : DUIL,
+      dataTransTimer : 
+        (if ML == nil and allSegsTransmitted(M) and DUIL == nil
+         then INF else T' fi),
+      FLUSHtimer : 
+        (if M' =/= noObjectBlock and DUIL == nil then 0 else INF fi) > 
+    (multisend 
+     DATA(DUI, noOfSegs(DUI, M', M), T, true) from S to OS) . 
+
+   
+
+  *** HOLDOFF TIMEOUT AFTER NACK ACCUMULATION PERIOD
+
+
+  *** During the holdoff timeout, the sender doesn't start a new
+  *** NACK accumulation period upon arrival of a NACK. Instead, 
+  *** the sender incorporates the repair request in its ongoing 
+  *** transmission provided the NACK content is ordinally greater
+  *** than the current transmission position. Otherwise, it is ignored.
+
+  crl [NACKarrivesDuringHoldoffTimeout] :
+    (outOfLink NACK(DUIL, T, B) from O to S)
+    < S : DTsenderAlone |
+      currentTransPos : DUI,
+      dataBuffer : M, flushBuffer : M', repairTransmission : DUIL', 
+      repairCycleHoldoffTimer : TI, invalidRepairRequests : DUIL'' >
+    =>
+    < S : DTsenderAlone |
+      repairTransmission : 
+        addDUIlist(keepForImmediateRepair(DUIL, DUI, M', M), DUIL'),
+      invalidRepairRequests : 
+        addDUIlist(keepInvalidReqs(DUIL, M', M), DUIL'') >
+    if TI =/= INF and TI =/= 0 .
+
+
+
+  *** When the holdoff timer expires, it is turned off and
+  *** a new NACK aggregation period can be begun.
+
+  rl [repairCycleHoldoffTimerExpires] :
+    < S : DTsender |
+      repairCycleHoldoffTimer : 0 >
+    =>
+    < S : DTsender |
+      repairCycleHoldoffTimer : INF > .
+
+
+
+  *** SQUELCH MESSAGE
+
+
+  *** If the sender has received invalid repair requests, 
+  *** it sends a SQUELCH informing the receivers of the 
+  *** earliest data unit id valid for repair. A SQUELCH can
+  *** only be sent once every 2*GRTT, so a holdoff timer is
+  *** set upon SQUELCH generation.
+
+  crl [sendSQUELCH] :
+    < S : DTsender |
+      children : OS, GRTT : T, 
+      dataBuffer : M, flushBuffer : M',
+      invalidRepairRequests : DUIL, SQUELCHholdoffTimer : TI >
+    =>
+    < S : DTsender |
+      invalidRepairRequests : nil, SQUELCHholdoffTimer : 2 * T >
+    (if M' == noObjectBlock 
+     then (multisend SQUELCH(firstDataUnitId(M), T) from S to OS)
+     else (multisend SQUELCH(firstDataUnitId(M'), T) from S to OS)
+     fi)
+    if DUIL =/= nil /\ (TI == 0 or TI == INF) .
+
+
+  *** When the SQUELCH holdoff timer expires, it is turned off, and
+  *** the sender is free to send a new SQUELCH for invalid repair requests.
+
+  rl [SQUELCHholdoffTimerExpires] :
+    < S : DTsender | SQUELCHholdoffTimer : 0 >
+    =>
+    < S : DTsender | SQUELCHholdoffTimer : INF > .
+
+ 
+  *** THE EFFECT OF TIME
+
+
+  eq delta(< S : DTsenderAlone | clock : T, dataTransTimer : TI, 
+    NACKaccumTimer : TI', repairCycleHoldoffTimer : TI'',
+    FLUSHtimer : TI''' >, T') =
+    < S : DTsenderAlone | clock : T + T', dataTransTimer : TI monus T',
+    NACKaccumTimer : TI' monus T', repairCycleHoldoffTimer : TI'' monus T',
+    FLUSHtimer : TI''' monus T' > .
+
+
+
+  *** MAXIMUM TIME ELAPSE
+
+
+  eq mte(< S : DTsenderAlone | dataTransTimer : TI, NACKaccumTimer : TI', 
+    repairCycleHoldoffTimer : TI'', FLUSHtimer : TI''' >) =
+    min(TI, min(TI', min(TI'', TI'''))) .
+
+
+
+
+
+  *** THE RECEIVER ***
+
+
+  class DTreceiver |
+    receiveBuffer : MsgList, *** received DATA msgs
+    repairNeeds : DataUnitIdList, *** records missing segments
+    sendersCurrTransPos : DataUnitId, *** last id received
+    nextExpectedDUI : DataUnitId, *** all previous DUIs received 
+    repairRequests : DataUnitIdList, *** pending NACK content
+    extRepRequests : DataUnitIdList, *** reqs. from other receivers
+    NACKbackoffTimer : TimeInf, *** backoff timeout before NACKing
+    NACKcycleHoldoffTimer : TimeInf . *** holdoff before new cycle
+
+
+  *** Inherits the following attributes from its superclasses:
+  *** clock, NormRobustFactor, GRTT, gsize, parent, randomSeed, CLR.  
+
+  subclass DTreceiver < Receiver .
+
+  class DTreceiverAlone . subclass DTreceiverAlone < DTreceiver .
+
+
+
+  *** RECEPTION AND FORWARDING OF DATA, INITIATION OF NACK
+  *** CYCLE AT OBJECT BOUNDARY
+
+
+  *** The receiver receives the next expected data segment.
+  *** Since it is the next expected one, this implies there
+  *** is no gap in transmission (at least no gap that is 
+  *** possible to repair), thus the receiver doesn't need to
+  *** check for repair needs at object boundaries.
+
+  rl [receivesTheNextExpectedSegment] : 
+    (outOfLink DATA(NZN :: NZN', NZN'', T, false) from O to R)
+    < R : DTreceiver |
+      receiveBuffer : ML, nextExpectedDUI : NZN :: NZN' >
+    =>
+    < R : DTreceiver |
+      GRTT : T,
+      receiveBuffer : ML ++ DATA(NZN :: NZN', NZN'', T, false),
+      sendersCurrTransPos : NZN :: NZN',
+      nextExpectedDUI : (if NZN' < NZN'' then (NZN :: s(NZN'))
+        else (s(NZN) :: 1) fi) > .    
+
+ 
+
+  *** The received data segment is not the expected one.
+  *** If it has reached an object boundary and it is not
+  *** in a NACK cycle or holdoff period, the receiver will
+  *** set the NACKbackoffTimer (this was not the expected 
+  *** segment, so there must be a gap in the received data).
+
+  crl [gapInReception] : 
+    (outOfLink DATA(DUI, NZN, T, false) from O to R)
+    < R : DTreceiver |
+      randomSeed : N, NormRobustFactor : NZN', gsize : NZN'',
+      receiveBuffer : ML, nextExpectedDUI : DUI', 
+      repairNeeds : DUIL, repairRequests : DUIL',  
+      NACKbackoffTimer : TI, NACKcycleHoldoffTimer : TI' >
+    =>
+    (if objectBoundary(DUI, ML) 
+     and TI == INF and (TI' == 0 or TI' == INF) 
+     then *** NACK cycle is triggered at an object boundary  
+    < R : DTreceiver |
+      randomSeed : random(N), GRTT : T,
+      receiveBuffer : ML ++ DATA(DUI, NZN, T, false),
+      sendersCurrTransPos : DUI,
+      repairNeeds : DUIL ; recordRepairNeeds(DUI, DUI', ML),
+      repairRequests : 
+        addDUIlist(DUIL, 
+                   (DUIL' ; recordRepairNeeds(DUI, DUI', ML))),
+      NACKbackoffTimer : randomBackoff(random(N), NZN', T, NZN'') >
+     else *** the seg. and info. on missing segments is simply stored
+    < R : DTreceiver |
+      GRTT : T,
+      receiveBuffer : (if largerThan(DUI, DUI')
+                       then ML ++ DATA(DUI, NZN, T, false)
+                       else ML fi), *** duplicates are ignored 
+      sendersCurrTransPos : DUI,
+      repairNeeds : DUIL ; recordRepairNeeds(DUI, DUI', ML) > fi)
+    if DUI =/= DUI' .
+
+
+
+  *** The receiver receives a DATA message containing a repair
+  *** segment. If the repair message concerns a segment it didn't
+  *** receive, it cancels any pending repair request. If not,
+  *** the message is ignored.
+
+  rl [receivesRepairSegment] :
+    (outOfLink DATA(DUI, NZN, T, true) from O to R)
+    < R : DTreceiver |
+      receiveBuffer : ML, nextExpectedDUI : DUI', 
+      repairNeeds : DUIL, repairRequests : DUIL' >
+    =>
+    if missingSeg(DUI, DUIL) *** this is a missing segment  
+    then 
+    < R : DTreceiver |
+      GRTT : T, sendersCurrTransPos : DUI, 
+      receiveBuffer : addRepairMsg(DATA(DUI, NZN, T, true), ML),
+      repairNeeds : removeRepReq(DATA(DUI, NZN, T, true), DUIL),
+      repairRequests : removeRepReq(DATA(DUI, NZN, T, true), DUIL'),
+      nextExpectedDUI : (if DUI == DUI' then 
+        newNextExpectedDUI(
+          recBuffFromDUI(addRepairMsg(DATA(DUI, NZN, T, true), ML), DUI))
+        else DUI' fi) >
+    else *** the message is ignored
+    < R : DTreceiver | GRTT : T > fi .
+
+
+
+  *** The receiver forwards every data segment except the
+  *** last one before the nextExpectedDUI. The last segment provides 
+  *** information about the number of segments in the object to which 
+  *** it belongs, in case the receiver must generate a repair request.
+  *** The DATA headers are discarded.
+
+  crl [forwardDataSegments] :
+    < A : ReceiverApplication | receiver : R, dataBuffer : DUIL >
+    < R : DTreceiver |
+      receiveBuffer : DATA(NZN :: NZN', NZN'', T, B) ++ ML,
+      nextExpectedDUI : N :: N' >
+    =>
+    < A : ReceiverApplication | dataBuffer : DUIL ; (NZN :: NZN') >
+    < R : DTreceiver | receiveBuffer : ML >
+    if (not(NZN' == NZN'' and N' == 1 and s(NZN) == N)
+      and not(NZN :: s(NZN') == N :: N')) 
+    or N :: N' == (0 :: 0) .
+
+
+  *** The receiver forwards the very last data segment.
+
+  rl [forwardLastDataSegment] :
+    < A : ReceiverApplication | receiver : R, dataBuffer : DUIL >
+    < R : DTreceiver | receiveBuffer : DATA(NZN :: NZN', NZN', T, B) >
+    < S : DTsender | dataBuffer : noObjectBlock, flushBuffer : noObjectBlock >
+    < A' : SenderApplication | dataBuffer : (nil).MsgList >
+    =>
+    < A : ReceiverApplication | dataBuffer : DUIL ; (NZN :: NZN') >
+    < R : DTreceiver | receiveBuffer : (nil).MsgList, nextExpectedDUI : 0 :: 0 > 
+    < S : DTsender | > < A' : SenderApplication | > .
+
+
+
+
+  *** INITIATION OF NACK CYCLE UPON RECEPTION OF FLUSH
+
+
+  *** When a receiver receives a FLUSH, it will initiate a NACK
+  *** cycle provided it has repair needs in the range up to and 
+  *** including the flush point, and provided it is not already in a 
+  *** NACK cycle or a holdoff period.
+
+  crl [NACKcycleInitiatedByFLUSH] : 
+    (outOfLink FLUSH(NZN :: NZN', T, B) from O to R)
+    < R : DTreceiver |
+      randomSeed : N, NormRobustFactor : NZN'', gsize : NZN''', 
+      receiveBuffer : ML, nextExpectedDUI : DUI,
+      repairNeeds : DUIL, repairRequests : DUIL', 
+      NACKbackoffTimer : TI, NACKcycleHoldoffTimer : TI',
+      sendersCurrTransPos : DUI' >
+    =>
+    (if (keepValidNACKcontent(DUIL, NZN :: NZN') =/= nil
+     or recordRepairNeeds(s(NZN) :: 1, DUI, 
+                          recBuffUpToDUI(ML, s(NZN) :: 1)) =/= nil) 
+     and TI == INF and (TI' == INF or TI' == 0)
+     then
+     < R : DTreceiver | 
+       GRTT : T, randomSeed : random(N),
+       repairNeeds : addDUIlist(recordRepairNeeds(s(NZN) :: 1, DUI, 
+                                    recBuffUpToDUI(ML, s(NZN) :: 1)),
+                                DUIL),
+       repairRequests : addDUIlist(recordRepairNeeds(s(NZN) :: 1, DUI, 
+                                       recBuffUpToDUI(ML, s(NZN) :: 1)),
+                                   keepValidNACKcontent(DUIL, NZN :: NZN')),
+       NACKbackoffTimer : randomBackoff(random(N), NZN'', T, NZN'''),
+       sendersCurrTransPos : (if B then 0 :: 0 else DUI' fi) >
+     else 
+     < R : DTreceiver |
+       GRTT : T, 
+       nextExpectedDUI : 
+         (if B == true and DUI == s(NZN) :: 1 then 0 :: 0 else DUI fi) > fi)  
+    if largerThan(s(NZN) :: 1, DUI) /\ DUI =/= 0 :: 0 . 
+
+
+
+  *** A receiver which has received all transmitted segments or
+  *** all segments up to and including the flush point ignores any
+  *** FLUSH messages from the sender.
+
+  crl [ignoreFLUSH] :
+    (outOfLink FLUSH(DUI, T, B) from O to R)
+    < R : DTreceiver | nextExpectedDUI : DUI' >
+    =>
+    < R : DTreceiver | GRTT : T >
+    if smallerThan(DUI, DUI') or DUI' == 0 :: 0 .
+
+
+
+  *** EXTERNAL REPAIR STATE ACCUMULATION
+
+
+  *** Accumulates external repair state from the NACKs of other
+  *** receivers while its backoff timer is running. If the timer
+  *** is off, the NACK is ignored.
+
+  rl [accumulateExternalRepairState] : 
+    (outOfLink NACK(DUIL, T, B) from O to R)
+    < R : DTreceiver | 
+      extRepRequests : DUIL', NACKbackoffTimer : TI >
+    =>
+    if TI =/= INF and TI =/= 0 
+    then 
+    < R : DTreceiver | 
+      extRepRequests : addDUIlist(DUIL, DUIL') >
+    else 
+    < R : DTreceiver | > fi .      
+
+
+
+  *** TRANSMISSION OF NACK FOLLOWED BY HOLDOFF TIMEOUT
+
+
+  *** When the backoff timer expires, the receiver considers
+  *** the sender's current transmission position and the
+  *** accumulated external repair state and makes a decision on
+  *** whether to send a NACK. If it sends a NACK, it must set its
+  *** holdoff timer and wait a certain amount of time before it
+  *** can initiate another NACK cycle. The NACK contains repair
+  *** requests starting with the receiver's earliest repair need
+  *** up to the sender's current transmission position.
+
+  crl [makeNACKdecision] : 
+    < R : DTreceiverAlone |
+      parent : O, NormRobustFactor : NZN, GRTT : T,
+      CLR : B, sendersCurrTransPos : DUI,
+      repairRequests : DUIL, extRepRequests : DUIL',
+      NACKbackoffTimer : 0, NACKcycleHoldoffTimer : INF >
+    =>
+    (if not(alreadyNACKed(DUIL, DUIL')) and 
+      (DUI == 0 :: 0 or-else smallerThan(first(DUIL), DUI))
+     then
+     (< R : DTreceiverAlone | 
+       repairRequests : nil, extRepRequests : nil,
+       NACKbackoffTimer : INF, NACKcycleHoldoffTimer : (NZN + 2) * T >
+     (intoLink NACK(sublistUpToDUI(DUIL, DUI), 0, B) from R to O))
+     else 
+     < R : DTreceiverAlone |
+      repairRequests : nil, extRepRequests : nil,
+      NACKbackoffTimer : INF > fi)
+    if DUIL =/= nil .
+
+
+
+  *** If the receiver doesn't have any repair requests when the
+  *** NACKbackoffTimer expires (they may have been squelched, for
+  *** instance), the timer is simply turned off.
+
+  rl [noRepairRequests] :
+    < R : DTreceiver | NACKbackoffTimer : 0, repairRequests : nil >
+    =>
+    < R : DTreceiver | NACKbackoffTimer : INF > .	
+
+
+
+  *** This rule turns off the NACKcycleHoldoffTimer once
+  *** it has expired. The sender is then free to start 
+  *** another NACK cycle.
+
+  rl [turnOffNACKcycleHoldoffTimer] : 
+    < R : DTreceiver | NACKcycleHoldoffTimer : 0 >
+    =>
+    < R : DTreceiver | NACKcycleHoldoffTimer : INF > .
+
+
+
+  *** CANCEL PENDING INVALID REPAIR REQUESTS
+
+
+  *** If it receives a SQUELCH, the receiver removes any invalid
+  *** repair requests from its lists of repair needs and requests,
+  *** and updates the nextExpectedDUI if needed. (We presuppose
+  *** that the earliest valid repair point will always be the
+  *** first segment of an object.) If the SQUELCH invalidates all
+  *** pending NACK content, the NACKbackoffTimer is turned off.
+
+  rl [removeInvalidRepairRequests] : 
+    (outOfLink SQUELCH(DUI, T) from O to R)
+    < R : DTreceiver | 
+      receiveBuffer : ML, nextExpectedDUI : DUI',
+      repairNeeds : DUIL, repairRequests : DUIL' >
+    =>
+    < R : DTreceiver | 
+      GRTT : T, repairNeeds : removeSquelchedRepReqs(DUIL, DUI),
+      repairRequests : removeSquelchedRepReqs(DUIL', DUI),
+      nextExpectedDUI : (if smallerThan(DUI', DUI)
+        then newNextExpectedDUI(recBuffFromDUI(ML, DUI))
+        else DUI' fi) > .
+ 
+
+
+  *** THE EFFECT OF TIME
+
+
+  eq delta(< R : DTreceiverAlone | clock : T, NACKbackoffTimer : TI,
+    NACKcycleHoldoffTimer : TI' >, T') = 
+    < R : DTreceiverAlone | clock : T + T', NACKbackoffTimer : TI monus T',
+    NACKcycleHoldoffTimer : TI' monus T' > .
+
+
+
+  *** MAXIMUM TIME ELAPSE
+
+
+  eq mte(< R : DTreceiverAlone | NACKbackoffTimer : TI, 
+    NACKcycleHoldoffTimer : TI' >) = 
+    min(TI, TI') .
+
+
+
+  *** FUNCTIONS USED BY THE SENDER AND RECEIVER
+  ***( Dele opp i sender's, receiver's og felles funksjoner?)
+
+
+  *** Are all segments of an object or a list of objects
+  *** in the sender's dataBuffer transmitted?
+
+  op allSegsTransmitted : Msg -> Bool .
+  op allSegsTransmitted : MsgList -> Bool .
+
+  eq allSegsTransmitted(noObjectBlock) = true .
+  eq allSegsTransmitted(objectBlock(ML)) =
+    allSegsTransmitted(ML) .
+  eq allSegsTransmitted((nil).MsgList) = true .
+  eq allSegsTransmitted(OBJECT(NZN, NZN', N) ++ ML) = 
+    NZN' == N and allSegsTransmitted(ML) . 
+
+
+
+  *** Find the smallest data unit id in an object block.
+
+  op firstDataUnitId : Msg -> DataUnitId .
+
+  eq firstDataUnitId(objectBlock(OBJECT(NZN, NZN', N) ++ ML)) =
+    NZN :: 1 .
+
+
+
+  *** Find the greatest data unit id in an object block
+
+  op lastDataUnitId : Msg -> DataUnitId .
+
+  eq lastDataUnitId(objectBlock(ML ++ OBJECT(NZN, NZN', N))) =
+    NZN :: NZN' .
+
+
+
+  *** Is the first data unit id smaller than the second?
+
+  op smallerThan : DataUnitId DataUnitId -> Bool .
+
+  eq smallerThan(NZN :: N, NZN' :: N') =
+    NZN < NZN' or (NZN == NZN' and N < N') .
+
+
+
+  *** Is the first data unit id larger than the second?
+
+  op largerThan : DataUnitId DataUnitId -> Bool .
+
+  eq largerThan(NZN :: N, NZN' :: N') =
+    NZN > NZN' or (NZN == NZN' and N > N') .
+
+
+
+  *** Add one single data unit id to a sorted list of ids.
+  op addDUI : DataUnitId DataUnitIdList -> DataUnitIdList .
+
+  eq addDUI(NZN :: N, nil) = NZN :: N .
+  eq addDUI(DUI, (DUI' ; DUIL)) =
+    *** already in the list:
+    if DUI == DUI'
+    then (DUI' ; DUIL)
+    *** add to the sorted list:
+    else (if smallerThan(DUI, DUI')
+          then DUI ; (DUI' ; DUIL)
+          else DUI' ; addDUI(DUI, DUIL) fi)
+    fi . 
+
+
+
+  *** Add a list of new data unit ids to a sorted list and remove doubles.
+  op addDUIlist : DataUnitIdList DataUnitIdList -> DataUnitIdList .
+
+  eq addDUIlist(nil, DUIL) = DUIL .
+  eq addDUIlist(DUI ; DUIL, DUIL') = 
+    addDUIlist(DUIL, addDUI(DUI, DUIL')) .
+
+
+
+  *** Find the number of segments in the object denoted
+  *** by the dataUnitId.
+
+  op noOfSegs : DataUnitId Msg Msg -> Nat .
+  op findNoOfSegs : DataUnitId Msg -> Nat .
+
+  eq noOfSegs(DUI, M, M') =
+    findNoOfSegs(DUI, M) + findNoOfSegs(DUI, M') .
+  eq findNoOfSegs(DUI, noObjectBlock) = 0 .
+  eq findNoOfSegs(DUI, objectBlock(nil)) = 0 .
+  eq findNoOfSegs(NZN :: N, objectBlock(OBJECT(NZN', NZN'', N') ++ ML)) =
+    if NZN == NZN' then NZN''
+    else findNoOfSegs(NZN :: N, objectBlock(ML)) fi .
+
+
+
+  *** Is a repair request valid, i.e. does it concerns a data 
+  *** segment that is either in the flush buffer or data buffer?
+  *** Usage: valid(repReq, objectBlock, objectBlock)
+
+  op valid : DataUnitId Msg Msg -> Bool .
+  op validInObjBlock : DataUnitId Msg -> Bool .
+
+  eq valid(DUI, M, M') =
+    validInObjBlock(DUI, M) or validInObjBlock(DUI, M') .
+  eq validInObjBlock(DUI, noObjectBlock) = false .
+  eq validInObjBlock(DUI, objectBlock(nil)) = false .
+  eq validInObjBlock(NZN :: N, 
+                     objectBlock(OBJECT(NZN', NZN'', N') ++ ML)) =
+    if NZN == NZN' and N <= NZN''
+    then true
+    else validInObjBlock(NZN :: NZN', objectBlock(ML)) fi .
+
+
+
+  *** Keep repair requests which are valid for immediate repair.
+  *** Usage: keepForImmediateRepair
+  ***   (repairRequests, currTransPos, objectBlock, objectBlock)
+
+  op keepForImmediateRepair : DataUnitIdList DataUnitId Msg Msg ->
+    DataUnitIdList .
+
+  eq keepForImmediateRepair(nil, DUI, M, M') = nil .
+  eq keepForImmediateRepair((NZN :: N) ; DUIL, NZN' :: NZN'', M, M') =
+    if valid(NZN :: N, M, M') and largerThan(NZN :: N, NZN' :: NZN'')
+    then ((NZN :: N) ; keepForImmediateRepair(DUIL, NZN' :: NZN'', M, M'))
+    else (if valid(NZN :: N, M, M') and NZN == NZN' and N  == 0
+          then generateDUIsequence(NZN :: s(NZN''),
+                                   NZN :: s(noOfSegs(NZN :: N, M, M'))) ;
+               keepForImmediateRepair(DUIL, NZN' :: NZN'', M, M')
+          else keepForImmediateRepair(DUIL, NZN' :: NZN'', M, M') fi) fi .
+
+
+
+  *** Keep repair requests which are valid for repair, i.e.
+  *** requests for data which the sender has in its data 
+  *** or flush buffer.
+  *** Usage: keepValidReqs(repairRequests, objectBlock, objectBlock)
+
+  op keepValidReqs : DataUnitIdList Msg Msg -> DataUnitIdList .
+
+  eq keepValidReqs(nil, M, M') = nil .
+  eq keepValidReqs(DUI ; DUIL, M, M') =
+    if valid(DUI, M, M')
+    then (DUI ; keepValidReqs(DUIL, M, M'))
+    else keepValidReqs(DUIL, M, M') fi .
+
+
+
+  *** Keep repair requests which are out of range/invalid.
+  *** Usage: keepInvalidReqs(repairRequests, objectBlock, objectBlock)
+
+  op keepInvalidReqs : DataUnitIdList Msg Msg -> DataUnitIdList .
+
+  eq keepInvalidReqs(nil, M, M') = nil .
+  eq keepInvalidReqs(DUI ; DUIL, M, M') =
+    if valid(DUI, M, M') 
+    then keepInvalidReqs(DUIL, M, M')
+    else (DUI ; keepInvalidReqs(DUIL, M, M')) fi .
+
+
+
+  *** keep all DUIs that are valid for repair according to
+  *** the lastValidRepairPosition
+  *** Usage: keepValidNACKcontent(listOfRepairNeeds, 
+  ***                             lastValidRepairPosition)
+
+  op keepValidNACKcontent : DataUnitIdList DataUnitId ->
+    DataUnitIdList .
+
+  eq keepValidNACKcontent(nil, DUI) = nil .
+  eq keepValidNACKcontent(DUI ; DUIL, DUI') =
+    if smallerThan(DUI, DUI') or DUI == DUI'
+    then (DUI ; keepValidNACKcontent(DUIL, DUI'))
+    else keepValidNACKcontent(DUIL, DUI') fi .  
+
+
+
+  *** Do external repair requests equal or supersede the
+  *** receiver's repair requests? I.e., have all the elements
+  *** in the receiver's list been NACKed by others?
+  *** Usage: alreadyNACKed(recRepRequests, extRepRequests)
+
+  op alreadyNACKed : DataUnitIdList DataUnitIdList -> Bool .
+
+  eq alreadyNACKed(nil, DUIL) = true .
+  eq alreadyNACKed(DUI ; DUIL, DUIL') =
+    if inDUIlist(DUI, DUIL')
+    then alreadyNACKed(DUIL, DUIL')
+    else false fi .
+
+
+
+  *** Return the sublist of a data unit id list from lowest
+  *** element up to a certain DUI.
+  *** Usage: sublistUpToDUI(DUIlist, upToThisDUI)
+
+  op sublistUpToDUI : DataUnitIdList DataUnitId -> DataUnitIdList .
+
+  eq sublistUpToDUI(nil, DUI) = nil .
+  eq sublistUpToDUI(DUIL, 0 :: 0) = DUIL .
+  eq sublistUpToDUI(DUI ; DUIL, DUI') =
+    if smallerThan(DUI, DUI')
+    then DUI ; sublistUpToDUI(DUIL, DUI')
+    else nil fi .
+
+
+
+  *** Has the reception reached an object boundary, i.e.
+  *** has a segment of the next object arrived?
+  *** Usage: objectBoundary(receivedSeg, recBuffer)
+
+  op objectBoundary : DataUnitId MsgList -> Bool .
+
+  eq objectBoundary(DUI, nil) = false .
+  eq objectBoundary(NZN :: NZN', 
+    ML ++ DATA(NZN'' :: NZN''', NZN'''', T, B)) = NZN'' < NZN .
+
+
+
+  *** Generate data unit ids for the missing segments between
+  *** the last segment in the receiveBuffer (or NextExpectedDUI,
+  *** in case this is the start of transmission and the first
+  *** segment(s) is lost) and the segment which just arrived.
+  *** If an entire object is missing, a DUI (n :: 0) is 
+  *** generated for that object.
+  *** Usage: 
+  ***   recordRepairNeeds(receivedSeg, nextExpectedDUI, recBuff)
+
+  op recordRepairNeeds : DataUnitId DataUnitId MsgList ->
+    DataUnitIdList .
+
+  *** The two equations handle the cases where, respectively,
+  *** there is information in the receiveBuffer about the number
+  *** of segments in an object, and there is no such information.
+
+  eq recordRepairNeeds(NZN :: NZN', NZN'' :: NZN''',
+    ML ++ DATA(NZN'''' :: NZN''''', NZN'''''', T, B)) =
+    if NZN'''' < NZN
+    then generateDUIsequence(NZN'''' :: s(NZN'''''),
+                             NZN'''' :: s(NZN'''''')) ;
+         recordRepairNeeds(NZN :: NZN', s(NZN'''') :: 1, nil) 
+    else generateDUIsequence(NZN'''' :: s(NZN'''''),
+                             NZN :: NZN') fi .
+  eq recordRepairNeeds(NZN :: NZN', NZN'' :: NZN''', nil) =
+    if NZN'' < NZN
+    then (NZN'' :: 0) ; 
+          recordRepairNeeds(NZN :: NZN', s(NZN'') :: 1, nil)
+    else generateDUIsequence(NZN'' :: NZN''', NZN :: NZN') fi .
+
+
+
+  *** Generate DUIs from and including first argument 
+  *** to (not including) last argument in the same object.
+  *** Usage: generateDUIsequence(fromDUI, toDUI)
+
+  op generateDUIsequence : DataUnitId DataUnitId ->
+    DataUnitIdList .
+
+  eq generateDUIsequence(NZN :: NZN', NZN :: NZN'') =
+    if NZN' == NZN''
+    then (nil).DataUnitIdList
+    else (NZN :: NZN') ; 
+          generateDUIsequence(NZN :: s(NZN'), NZN :: NZN'') fi .
+
+
+
+  *** Remove the request for the received segment. If the entire
+  *** object is missing, replace the object request with
+  *** segment requests for the remaining segments.
+  *** Usage: removeRepReq(receivedMsg, repairNeeds/Requests)
+
+  op removeRepReq : DataPacket DataUnitIdList -> DataUnitIdList .
+
+  eq removeRepReq(DP, (nil).DataUnitIdList) = (nil).DataUnitIdList .
+  eq removeRepReq(DATA(DUI, NZN, T, B), (NZN' :: NZN'') ; DUIL) =
+    if DUI == NZN' :: NZN''
+    then DUIL
+    else (NZN' :: NZN'') ; removeRepReq(DATA(DUI, NZN, T, B), DUIL) fi .
+  eq removeRepReq(DATA(NZN :: NZN', NZN'', T, B), (NZN :: 0) ; DUIL) =
+    if NZN' == 1 
+    then (generateDUIsequence(NZN :: s(NZN'), NZN :: s(NZN'')) ; DUIL)
+    else (if NZN' == NZN''
+          then (generateDUIsequence(NZN :: 1, NZN :: NZN') ; DUIL)
+          else (generateDUIsequence(NZN :: 1, NZN :: NZN') ; 
+    generateDUIsequence(NZN :: s(NZN'), NZN :: s(NZN'')) ; DUIL) fi) fi .
+
+
+
+  *** Update nextExpectedDUI by running through the receiveBuffer
+  *** and finding the next gap, if any.
+  *** Usage: newNextExpectedDUI(receiveBuffer)
+
+  op newNextExpectedDUI : MsgList -> DataUnitId .
+
+  eq newNextExpectedDUI(DATA(NZN :: NZN', NZN'', T, B) ++ (nil).MsgList) = 
+    if NZN' < NZN''
+    then (NZN :: s(NZN'))
+    else (s(NZN) :: 1) fi .
+  eq newNextExpectedDUI(DATA(NZN :: NZN', NZN'', T, B) ++ 
+    DATA(NZN''' :: NZN'''', NZN''''', T', B') ++ ML) = 
+    if gap(DATA(NZN :: NZN', NZN'', T, B), 
+           DATA(NZN''' :: NZN'''', NZN''''', T', B')) 
+    then (if NZN' < NZN'' then (NZN :: s(NZN'))
+          else (s(NZN) :: 1) fi)
+    else 
+    newNextExpectedDUI(DATA(NZN''' :: NZN'''', NZN''''', T', B') ++ ML) fi .
+
+
+
+  *** Is there a gap between two DATA messages?
+
+  op gap : DataPacket DataPacket -> Bool .
+
+  eq gap(DATA(NZN :: NZN', NZN'', T, B), 
+    DATA(NZN''' :: NZN'''', NZN''''', T', B')) = 
+    not((NZN == NZN''' and s(NZN') == NZN'''') or
+    (NZN' == NZN'' and s(NZN) == NZN''' and NZN'''' == 1)) . 
+    
+
+
+  ***is this segment among the missing ones?
+  *** Usage: missingSeg(repairSeg, repairNeeds)
+
+  op missingSeg : DataUnitId DataUnitIdList -> Bool .
+  eq missingSeg(DUI, DUIL) = 
+    inDUIlist(DUI, DUIL) or matchesObjectRequest(DUI, DUIL) .
+
+
+
+  *** is the data unit id in the DUI list?
+
+  op inDUIlist : DataUnitId DataUnitIdList -> Bool .
+
+  eq inDUIlist(DUI, (nil).DataUnitIdList) = false .
+  eq inDUIlist(DUI, DUI' ; DUIL) =
+    DUI == DUI' or inDUIlist(DUI, DUIL) .
+
+
+
+  *** is there a request for the entire object to which
+  *** the segment belongs in the data unit id list?
+
+  op matchesObjectRequest : DataUnitId DataUnitIdList -> Bool .
+
+  eq matchesObjectRequest(DUI, (nil).DataUnitIdList) = false .
+  eq matchesObjectRequest(NZN :: NZN', (NZN'' :: N) ; DUIL) =
+    (NZN == NZN'' and N == 0) or 
+    matchesObjectRequest(NZN :: NZN', DUIL) . 
+
+
+
+  *** Add repair message to sorted receiveBuffer.
+  *** Usage: addRepairMsg(repairMsg, receiveBuffer)
+
+  op addRepairMsg : DataPacket MsgList -> MsgList .
+
+  eq addRepairMsg(DP, (nil).MsgList) = DP .
+  eq addRepairMsg(DP, DP' ++ ML) =
+    if smallerThan(dataUnitId(DP), dataUnitId(DP'))
+    then DP ++ DP' ++ ML
+    else (if ML == nil
+          then DP' ++ DP   
+          else DP' ++ addRepairMsg(DP, ML) fi) fi .     
+
+ 
+
+  *** Returns the data unit id in a DATA message
+
+  op dataUnitId : DataPacket -> DataUnitId .
+
+  eq dataUnitId(DATA(NZN :: NZN', NZN'', T, B)) = NZN :: NZN' .
+
+
+
+  *** Removes the repair requests denoted as invalid by
+  *** a SQUELCH message, that is, all requests for segments or
+  *** objects with ids lower than the earliest valid repair position.
+  *** Usage: removeSquelchedRepReqs(DUIlist, startDUI)
+
+  op removeSquelchedRepReqs : DataUnitIdList DataUnitId -> DataUnitIdList .
+  
+  eq removeSquelchedRepReqs((nil).DataUnitIdList, DUI) = (nil).DataUnitIdList .
+  eq removeSquelchedRepReqs((NZN :: N) ; DUIL, NZN' :: NZN'') =
+    if smallerThan(NZN :: N, NZN' :: NZN'') and
+    not(NZN == NZN' and N == 0)
+    then removeSquelchedRepReqs(DUIL, NZN' :: NZN'')
+    else (NZN :: N) ; DUIL fi .
+
+
+
+  *** Returns the messages in the receiveBuffer that have an id
+  *** equal to or larger than the given DUI.
+  *** Usage: recBuffFromDUI(recBuff, earliestValidRepPos)
+
+  op recBuffFromDUI : MsgList DataUnitId -> MsgList .
+
+  eq recBuffFromDUI((nil).MsgList, DUI) = (nil).MsgList .
+  eq recBuffFromDUI(DATA(DUI, NZN, T, B) ++ ML, DUI') =
+    if DUI == DUI' or largerThan(DUI, DUI')
+    then DATA(DUI, NZN, T, B) ++ ML
+    else recBuffFromDUI(ML, DUI') fi .
+
+
+
+  *** Returns the messages in the receiveBuffer that have an id
+  *** smaller than the given DUI. 
+  *** Usage: recBuffUpToDUI(recBuff, dataUnitId)
+
+  op recBuffUpToDUI : MsgList DataUnitId -> MsgList .
+
+  eq recBuffUpToDUI((nil).MsgList, DUI) = (nil).MsgList .
+  eq recBuffUpToDUI(DATA(DUI, NZN, T, B) ++ ML, DUI') =
+    if smallerThan(DUI, DUI')
+    then DATA(DUI, NZN, T, B) ++ recBuffUpToDUI(ML, DUI') 
+    else nil fi .
+
+
+
+  *** Return the first element in a data unit id list.
+
+  op first : DataUnitIdList -> DataUnitId .
+
+  eq first((nil).DataUnitIdList) = (nil).DataUnitIdList .
+  eq first(DUI ; DUIL) = DUI .
+
+
+
+  *** Run through a list of repair requests and replace
+  *** any object requests with segment requests for 
+  *** the entire object.
+  *** Usage: replaceObjReq(repReqList, objectBlock, objectBlock)
+
+  op replaceObjReq : DataUnitIdList Msg Msg -> DataUnitIdList .
+
+  eq replaceObjReq((nil).DataUnitIdList, M, M') = 
+    (nil).DataUnitIdList .
+  eq replaceObjReq((NZN :: N) ; DUIL, M, M') =
+    if N == 0
+    then generateDUIsequence(NZN :: 1, 
+                             NZN :: s(noOfSegs(NZN :: N, M, M'))) ;
+         replaceObjReq(DUIL, M, M')
+    else (NZN :: N) ; replaceObjReq(DUIL, M, M') fi . 
+
+
+endtom)
+
+
+
+********************************************************
+

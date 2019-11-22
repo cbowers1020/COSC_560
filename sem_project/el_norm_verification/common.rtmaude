@@ -1,0 +1,558 @@
+*** CLASSES, RULES AND FUNCTIONS COMMON TO ALL PROTOCOL COMPONENTS
+
+
+ load real-time-maude.maude
+
+
+************************************************
+
+
+*** THE TIME DOMAIN
+
+
+*** Use built-in module NAT-TIME-DOMAIN-WITH-INF
+
+*** Timer attributes have sorts Time or TimeInf.
+*** A timer which is turned off has value INF
+
+
+
+************************************************
+
+
+*** TIMED OBJECT-ORIENTED SYSTEM
+
+
+(tomod TIMED-OO-SYSTEM is
+  inc LTIME-INF .
+
+  sort OidSet .
+  subsort Oid < OidSet .
+  op none : -> OidSet .
+  op __ : OidSet OidSet -> OidSet [assoc comm id: none] .
+
+  op delta : Configuration Time -> Configuration [frozen (1)] .
+  op mte : Configuration -> TimeInf [frozen (1)] .
+
+  vars NECF NECF' : NEConfiguration .
+  var T : Time . 
+  eq delta(none, T) = none .
+  eq delta(NECF NECF', T) = delta(NECF, T) delta(NECF', T) .
+  eq mte(none) = INF .
+  eq mte(NECF NECF') = min(mte(NECF), mte(NECF')) .
+endtom)
+
+
+
+(tomod DETERMINISTIC-TICK-RULE is
+  inc TIMED-OO-SYSTEM .
+
+  var OC : NEObjectConfiguration .
+
+  *** The tick rule is deterministic, and is only applied
+  *** when there are no unread messages in the configuration.
+  crl [tick] :
+    {OC} => {delta(OC, mte(OC))} in time mte(OC) 
+    if mte(OC) =/= INF .
+endtom) 
+
+
+************************************************
+
+*** SETTING THE TIMEOUT VALUES
+
+
+(fmod TIMEOUT-FUNCTIONS is
+  inc NAT . inc RAT . inc CONVERSION .
+
+  vars N N' N'' N''' : Nat . vars NZN NZN' : NzNat . 
+  vars  R R' : Rat . 
+
+
+
+  *** KNUTH'S RANDOM FUNCTION (FROM OELVECZKYS'S THESIS)
+
+  op random : Nat -> Nat .
+  eq random(N) = ((104 * N) + 7921) rem 10609 .
+
+
+
+  *** DIVERSE
+
+  op log : Rat -> Rat .
+  op exp : Rat -> Rat .
+
+  eq log(R) = rat(log(float(R))) .
+  eq exp(R) = rat(exp(float(R))) .
+
+
+  *** From Rat to Nat.
+  op nat : Rat -> Nat .
+  eq nat(R) = trunc(R + 1/2) .
+
+
+
+  *** RANDOM BACKOFF ALGORITHM ***
+
+  *** This is used by receivers to set/update their timers in the 
+  *** data transmission component.
+
+
+  *** maxBackoff(NormRobustFactor, GRTT) (= T_maxBackoff)
+  op maxBackoff : NzNat Nat -> Nat .
+
+  eq maxBackoff(NZN, N) = NZN * N .
+
+
+  *** lambda(GSIZE) (= L)
+  op lambda : Rat -> Rat .
+
+  eq lambda(R) = log(R) + 1 .
+
+
+  *** randomFrac(seed)
+  *** Returns a fraction value from 0 to 1.
+  op randomFrac : Nat -> Rat .
+
+  eq randomFrac(N) = random(N) rem (MAX-VALUE + 1) / MAX-VALUE .
+
+
+  op MAX-VALUE : -> Nat .
+
+  ***eq MAX-VALUE = 10 .
+  eq MAX-VALUE = 14 . 
+
+
+  *** Find a random value between 0-1:
+  *** randomUpTo(seed, upper)
+  op randomUpTo : Nat Rat -> Rat .
+
+  eq randomUpTo(N, R) = randomFrac(N) * R .
+
+
+  *** op x(seed, NormRobustFactor, GRTT, GSIZE) (= x) 
+  op x : Nat NzNat Nat NzNat -> Rat .  
+
+  eq x(N, NZN, N', NZN') =
+    randomUpTo(N, lambda(NZN') / maxBackoff(NZN, N')) 
+    + lambda(NZN') / (maxBackoff(NZN, N') * (exp(lambda(NZN')) - 1)) .
+
+
+  *** randomBackoff(seed, NormRobustFactor, GRTT, GSIZE) (= t')
+  op randomBackoff : Nat NzNat Nat NzNat -> Nat .
+
+  eq randomBackoff(N, NZN, N', NZN') =
+    nat((maxBackoff(NZN, N') / lambda(NZN')) 
+         * log(x(N, NZN, N', NZN') 
+               * (exp(lambda(NZN')) - 1)
+               * (maxBackoff(NZN, N') / lambda(NZN')))) .
+
+
+
+  *** RTT FEEDBACK FUNCTION ***
+
+  ***(This function is used by receivers to set/update their 
+      feedback timers in the RTT component. It uses the random 
+      backoff algorithm described above.
+      ACKtimer = y * r * (K * GRTT) + 
+      (1 - y) * RandomBackoff(K * GRTT, GSIZE) ) 
+
+
+  *** min and max for rational numbers
+  op minimum : Rat Rat -> Rat [assoc comm] .
+  op maximum : Rat Rat -> Rat [assoc comm] .
+
+  ceq minimum(R, R') = R if R <= R' .
+  ceq maximum(R, R') = R if R >= R' . 
+
+
+  ***(r during steady-state:
+      (max(min((recRate / senderRate), 0.9), 0.5) - 0.5) / 0.4  
+      Note: During slow start, r is determined simply as
+      recRate / senderRate. To keep things simple, I have not included
+      this function, as both the r functions give values in the
+      range 0-1.)
+
+  op r : Rat Rat -> Rat .
+
+  eq r(R, R') = (maximum(minimum((R / R'), 9/10), 1/2) - 1/2) / 2/5 .
+
+
+  *** Usage: RTTbackoff(seed, NormRobustFactor, GRTT, 
+  ***                   GSIZE, rcvRateInKbps, sndRateInKbps)
+  op RTTbackoff : Nat NzNat Nat NzNat Rat Rat -> NzNat .
+
+  eq RTTbackoff(N, NZN, N', NZN', R, R') =
+    nat(1/4 * r(R, R') * maxBackoff(NZN, N')
+        + (1 - 1/4) * randomBackoff(N, NZN, N', NZN')) .
+
+endfm)
+
+
+
+************************************************
+
+
+*** MESSAGES
+
+
+(tomod MESSAGES is
+  inc TIMED-OO-SYSTEM .
+  inc NAT-TIME-DOMAIN-WITH-INF . 
+
+  vars T T' : Time . var M : Msg . vars ML ML' : MsgList .
+  vars NZN NZN' NZN'' NZN''' : NzNat .
+  vars DUI DUI' : DataUnitId . var DUIL DUIL' : DataUnitIdList .
+
+
+ 
+  *** Objects store their messages in lists. New messages are entered
+  *** from the right, the leftmost message is the oldest one in the list.
+  sort MsgList .
+  subsort Msg < MsgList .
+  op nil : -> MsgList [ctor] .
+  op _++_ : MsgList MsgList -> MsgList [ctor assoc id: nil] .
+
+
+
+  *** The effect of time on a message list
+  op delta : MsgList Time -> MsgList [frozen (1)] .
+  op delta : Msg Time -> Msg [frozen (1)] .
+
+  eq delta((nil).MsgList, T) = (nil).MsgList .
+  ceq delta(ML ++ ML', T) =
+     delta(ML, T) ++ delta(ML', T) if ML =/= nil /\ ML' =/= nil .
+  eq delta(dly(M, T), T') = dly(M, T monus T') .
+
+
+
+  *** A message passing through a link or stored in the buffer of a 
+  *** router has a delay value attached to it.
+  msg dly : Msg Time -> Msg .  
+
+
+
+  *** Least delay of a message in a message list.
+  op leastDly : MsgList -> TimeInf .
+
+  eq leastDly(nil) = INF .
+  *** the leftmost (oldest) msg has the least delay:
+  eq leastDly(dly(M, T) ++ ML) = T .
+
+
+
+  *** Greatest delay of a message in a message list.
+  op greatestDly : MsgList -> TimeInf . 
+
+  eq greatestDly(nil) = 0 .
+  *** the rigthmost (newest) msg has the greatest delay:
+  eq greatestDly(ML ++ dly(M, T)) = T .
+
+
+
+  *** IDENTIFICATION OF DATA CONTENT
+
+
+  *** The content of a DATA message is identified by the
+  *** concatenation of the object id and the segment id: 
+  ***   objectId :: segmentId
+  sort DataUnitId .
+  op _::_ : Nat Nat -> DataUnitId .  
+  sort DataUnitIdList . subsort DataUnitId < DataUnitIdList .
+  op nil : -> DataUnitIdList [ctor] .
+  op _;_ : DataUnitIdList DataUnitIdList 
+           -> DataUnitIdList [ctor assoc id: nil] .
+
+
+
+  *** MESSAGE SIZES
+
+
+  sorts ControlPacket DataPacket .
+  subsort ControlPacket < Msg . subsort DataPacket < Msg .
+
+
+
+  *** NORM SENDER MESSAGES
+
+
+  *** Usage: DATA(dataUnitId, noOfSegmentsInObject, grtt, repairFlag)
+  *** noOfSeg is used by a receiver to determine whether it has received
+  *** an entire object. Repair flag is true if msg is a repair msg.
+  msg DATA : DataUnitId NzNat Time Bool -> DataPacket .
+
+
+
+  *** Usage: FLUSH(dataUnitId, grtt, eotFlag)
+  *** Eot flag is true if this is the end of transmission.
+  msg FLUSH : DataUnitId Time Bool -> ControlPacket .
+
+
+
+  *** Usage: SQUELCH(earliestDUIvalidForRepair, grtt) 
+  *** This msg is a simplification. In the spec, it is supposed to 
+  *** contain a list of the NormObjects and data unit ids that are not 
+  *** valid from the earliest valid transmission point and forward!
+  msg SQUELCH : DataUnitId Time -> ControlPacket .
+
+
+
+  *** Usage: CC(sendTime/timestamp, grtt, sendRateInKbps)
+  *** This message is simplified for RTT-collection use only.
+  msg CC : Time Time Nat -> ControlPacket . 
+
+
+  *** NORM RECEIVER MESSAGES
+
+
+  *** Usage: NACK(dataUnitIdList, adjustedTimestamp, CLRflag)
+  msg NACK : DataUnitIdList Time Bool -> ControlPacket .
+
+
+
+  *** Usage: ACK(adjustedTimestamp, recRateInKbps, CLRflag)
+  *** For GRTT purpose only. Returns an adjusted version of the senders
+  *** timestamp. Because of the ACK suppression technique used in this 
+  *** component, the receiver rate (for reception of data) is included.
+  msg ACK : Time Nat Bool -> ControlPacket .
+
+
+
+  *** NB! All sender messages should advertise the receiver group
+  *** size. This value is used by receivers when calculating their
+  *** timeout values. However, since I'm not modelling a dynamic group,
+  *** I've chosen to simplify the messages and let gsize be known by
+  *** each receiver in the initial state (as an attribute value).
+
+
+endtom)
+
+
+***eof
+
+************************************************
+
+*** TOPOLOGY: NODES, ROUTERS AND LINKS.
+
+
+(tomod NODES is
+  inc TIMED-OO-SYSTEM . inc NAT-TIME-DOMAIN-WITH-INF .
+  inc TIMEOUT-FUNCTIONS .
+
+
+  *** General properties of nodes.  
+ 
+  class RootOrLeaf | clock : Time, NormRobustFactor : NzNat,
+                  GRTT : Time, gsize : NzNat . 
+  class Parent | children : OidSet  .
+  class Child | parent : Oid .
+  class RandomSeed | randomSeed : Nat . 
+  class Sender | sendRate : Time . 
+  class Receiver | CLR : Bool . *** The Current Limiting Receiver
+  subclass Sender < Parent RootOrLeaf . 
+  subclass Receiver < RootOrLeaf Child RandomSeed .
+
+  *** Sender: clock, NormRobustFactor, GRTT, gsize, 
+  ***         children, sendRate.
+  *** Receiver: clock, NormRobustFactor, GRTT, gsize, 
+  ***         parent, randomSeed, CLR. 
+
+
+endtom)
+
+
+
+(tomod NETWORK is
+  inc TIMED-OO-SYSTEM . inc NAT-TIME-DOMAIN-WITH-INF .
+  inc NODES .
+  inc MESSAGES . 
+
+  vars O O' R L : Oid . var OS : OidSet . 
+  var M : Msg . vars ML ML' : MsgList .
+  var CP : ControlPacket . var DP : DataPacket . 
+  vars N N' : Nat . var NZN : NzNat .
+  vars T T' : Time . var NZT : NzTime . 
+
+
+  *** TRANSMITTING ACROSS A LINK
+
+
+  *** Packet "wrappers"
+  msg intoLink_from_to_ : Msg Oid Oid -> Msg . ***msg sent to link
+  msg outOfLink_from_to_ : Msg Oid Oid -> Msg . ***msg rec. from link
+
+
+
+  *** Routers and senders use a multisend wrap to broadcast a packet 
+  *** to a subset of the multicast group (i.e., their connections).
+  msg multisend_from_to_ : Msg Oid OidSet -> Configuration .
+
+  eq multisend M from O to none = none .
+  eq multisend M from O to (O' OS) = 
+     (intoLink M from O to O') (multisend M from O to (OS ex O')) .
+
+
+
+  *** Pick out all occurences of an Oid from a set of Oids.
+  op _ex_ : OidSet Oid -> OidSet .
+
+  eq none ex O = none .
+  eq (O OS) ex O' = 
+    if O == O' then (OS ex O') 
+    else O (OS ex O') fi .
+  eq O O = O .  
+
+
+
+  *** LINKS
+
+
+  class Link | 
+    upNode : Oid, downNode : Oid,
+    upstream : MsgList, 
+    downstream : MsgList, 
+    propDelay : NzTime, *** speed-of-light prop. delay, depends
+                        *** on the medium and distance
+    bandwidth : NzNat . *** in Megabits pr. sec.
+
+
+  *** Transmission delay of a packet in a link is the packet size
+  *** divided by the bandwidth. Data packets are 1500 bytes,
+  *** control packets are 64 bytes large.
+  op transDelay : Msg NzNat -> Time .
+
+  *** Packet size of 64 bytes:
+  eq transDelay(CP, NZN) =
+     ((64 * 8) + ((NZN * 1000) monus 1)) quo (NZN * 1000) .
+  *** Packet size of 1500 bytes (data packet):
+  eq transDelay(DP, NZN) =
+     ((1500 * 8) + ((NZN * 1000) monus 1)) quo (NZN * 1000) .
+
+
+
+  *** A message is entered into the link. The delay/latency of the 
+  *** message is computed by adding max of propagation delay and 
+  *** greatest delay in msglist to the transmission delay of the message.
+
+  crl [msgFromUpNode] :
+    (intoLink M from O to O')
+    < L : Link | upNode : O, downNode : O', downstream : ML,
+                 propDelay : NZT, bandwidth : NZN >
+    =>
+    < L : Link | 
+    downstream : ML ++ dly(M, max(NZT, greatestDly(ML))
+                               + transDelay(M, NZN)) > 
+    if leastDly(ML) =/= 0 .
+
+
+
+  crl [msgFromDownNode] :
+   (intoLink M from O to O')
+    < L : Link | downNode : O, upNode : O', upstream : ML, 
+                 propDelay : NZT, bandwidth : NZN >
+    =>
+    < L : Link | 
+    upstream : ML ++ dly(M, max(NZT, greatestDly(ML))
+                            + transDelay(M, NZN)) > 
+    if leastDly(ML) =/= 0 .
+
+
+
+  *** A message has traversed the link and is delivered to 
+  *** its destination.
+
+  rl [msgToUpNode] :
+    < L : Link | upNode : O, downNode : O', 
+                 upstream : dly(M, 0) ++ ML >
+    =>
+    < L : Link | upstream : ML >
+    (outOfLink M from O' to O) .
+
+
+
+  rl [msgToDownNode] :
+    < L : Link | downNode : O, upNode : O',  
+                 downstream : dly(M, 0) ++ ML >
+    =>
+    < L : Link | downstream : ML >
+    (outOfLink M from O' to O) .
+
+
+
+  *** Timed behaviour of a link
+  eq delta(< L : Link | downstream : ML, upstream : ML' >, T) =
+           < L : Link | downstream : delta(ML, T), 
+                        upstream : delta(ML', T) > .
+  eq mte(< L : Link | downstream : ML, upstream : ML' >) =
+     min(leastDly(ML), leastDly(ML')) .  
+
+
+
+  *** ROUTERS
+
+
+  class Router | 
+    buffer : MsgList, bufferCap : Nat, ***max cap = inBuffer + cap 
+    queuingDelay : Time . 
+
+  *** Routers have a parent and a set of children.  
+  subclass Router < Parent  Child .
+
+
+  *** Incoming packet is stored with info about who sent it to the router.
+  msg forward : Oid Msg -> Msg . *** forward Msg from Oid. 
+
+
+
+  *** Routers have FIFO queuing with tail drop!
+  *** Incoming packet is stored if there is space/room in the buffer,
+  *** otherwise it is dumped.
+
+  rl [bufferOrDrop] :
+    (outOfLink M from O to R) 
+    < R : Router | buffer : ML, bufferCap : N, 
+                   queuingDelay : N' >
+    => 
+    if N > 0 
+     then < R : Router | buffer : ML ++ dly(forward(O, M), N'), 
+                         bufferCap : sd(N, 1) >
+     else < R : Router | > fi .
+
+
+
+  *** Forwarding msg. Goes out to all connections except the node 
+  *** that sent the message to the router.
+
+  rl [forward] : 
+  < R : Router | parent : O, children : OS, 
+                 buffer : dly(forward(O', M), 0) ++ ML,
+                 bufferCap : N >
+  => 
+  < R : Router | buffer : ML, bufferCap : N + 1 > 
+  if O' == O 
+   then (multisend M from R to OS)
+   else (multisend M from R to O (OS ex O')) fi . 
+
+  *** Timed behaviour of routers
+  eq delta(< R : Router | buffer : ML >, T) =
+     < R : Router | buffer : delta(ML, T) > .
+  eq mte(< R : Router | buffer : ML >) = leastDly(ML) . 
+
+
+endtom)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

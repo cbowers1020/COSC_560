@@ -1,0 +1,57 @@
+*** Running the combined protocol
+
+load real-time-maude.maude
+load common.rtmaude
+load data.rtmaude
+load rtt.rtmaude
+
+
+(tomod NORM-COMBINED is
+  including NORM-RTT .
+  including NORM-DATA-TRANSMISSION . 
+
+
+  class SenderCombined .
+  subclass SenderCombined < DTsender .
+  subclass SenderCombined < RTTsender .
+
+
+  class ReceiverCombined .
+  subclass ReceiverCombined < DTreceiver .
+  subclass ReceiverCombined < RTTreceiver .
+
+
+
+  vars S R : Oid .
+  vars T T' : Time .
+  vars TI TI' TI'' TI''' TI'''' TI''''' : TimeInf . 
+
+
+  eq delta(< S : SenderCombined | clock : T, dataTransTimer : TI, 
+                   NACKaccumTimer : TI', repairCycleHoldoffTimer : TI'', 
+                   FLUSHtimer : TI''', SQUELCHholdoffTimer : TI'''', 
+                   CCtransTimer : TI''''' >, T') = 
+  < S : SenderCombined | clock : T + T', dataTransTimer : TI monus T',
+          NACKaccumTimer : TI' monus T', repairCycleHoldoffTimer : TI'' monus T', 
+          FLUSHtimer : TI''' monus T', SQUELCHholdoffTimer : TI'''' monus T', 
+          CCtransTimer : TI''''' monus T' > .
+
+  eq delta(< R : ReceiverCombined | clock : T, NACKbackoffTimer : TI,
+                   NACKcycleHoldoffTimer : TI', ACKtimer : TI'', 
+                   ACKholdoffTimer : TI''' >, T') = 
+  < R : ReceiverCombined | clock : T + T', NACKbackoffTimer : TI monus T',
+          NACKcycleHoldoffTimer : TI' monus T', ACKtimer : TI'' monus T', 
+          ACKholdoffTimer : TI''' monus T' > .
+
+
+  eq mte(< S : SenderCombined | dataTransTimer : TI, NACKaccumTimer : TI', 
+                   repairCycleHoldoffTimer : TI'', FLUSHtimer : TI''',
+                   SQUELCHholdoffTimer : TI'''', CCtransTimer : TI''''' >) = 
+  min(min(min(min(min(TI, TI'), TI''), TI'''), TI''''), TI''''') .
+
+  eq mte(< R : ReceiverCombined | NACKbackoffTimer : TI,
+                   NACKcycleHoldoffTimer : TI', ACKtimer : TI'', 
+                   ACKholdoffTimer : TI''' >) = 
+  min(min(min(TI, TI'), TI''), TI''') .
+
+endtom) 
