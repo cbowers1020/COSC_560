@@ -1,0 +1,61 @@
+This is BibTeX, Version 0.99d (TeX Live 2019)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: NORM_Verification.aux
+The style file: IEEEtran.bst
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Database file #1: sem_project_bib.bib
+-- IEEEtran.bst version 1.14 (2015/08/26) by Michael Shell.
+-- http://www.michaelshell.org/tex/ieeetran/bibtex/
+-- See the "IEEEtran_bst_HOWTO.pdf" manual for usage information.
+Warning--empty booktitle in Lien2004
+Warning--empty booktitle in Baptista1990
+Warning--empty booktitle in Archer2002
+Warning--empty booktitle in Borujerdi2004
+
+Done.
+You've used 21 entries,
+            4087 wiz_defined-function locations,
+            972 strings with 11077 characters,
+and the built_in function-call counts, 14271 in all, are:
+= -- 1106
+> -- 313
+< -- 104
++ -- 171
+- -- 53
+* -- 668
+:= -- 2164
+add.period$ -- 45
+call.type$ -- 21
+change.case$ -- 23
+chr.to.int$ -- 249
+cite$ -- 25
+duplicate$ -- 1044
+empty$ -- 1241
+format.name$ -- 69
+if$ -- 3316
+int.to.chr$ -- 0
+int.to.str$ -- 21
+missing$ -- 187
+newline$ -- 100
+num.names$ -- 23
+pop$ -- 479
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 2
+skip$ -- 1083
+stack$ -- 0
+substring$ -- 597
+swap$ -- 807
+text.length$ -- 21
+text.prefix$ -- 0
+top$ -- 5
+type$ -- 21
+warning$ -- 4
+while$ -- 61
+width$ -- 23
+write$ -- 224
+(There were 4 warnings)
