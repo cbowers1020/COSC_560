@@ -1,0 +1,563 @@
+
+  *** Test modules for the data transmission component
+
+load data.rtmaude
+
+
+***set trace on .
+***trace exclude REAL-TIME-MAUDE .
+***set trace substitution off .
+***set trace eq off .
+
+(tomod NORM-DT-1 is
+  inc NORM-DATA-TRANSMISSION .
+
+
+  ops senderApp sender rec1 rec2 recApp1 recApp2  router 
+    sender-router router-rec1 router-rec2 : -> Oid .
+  op data1 : -> GlobalSystem .
+
+*** Denne tilstanden er ferdig definert!
+*** flere pakker går tapt, alle repareres
+  eq data1 =
+ {< senderApp : SenderApplication | 
+    dataBuffer : objectBlock(OBJECT(1, 70, 0) ++ OBJECT(2, 70, 0)) 
+             ++  objectBlock(OBJECT(3, 70, 0) ++ OBJECT(4, 70, 0)) >
+
+  < sender : DTsenderAlone | 
+    clock : 0, NormRobustFactor : 4, GRTT : 70, gsize : 2, 
+    children : router, sendRate : 10, 
+    dataBuffer : noObjectBlock, flushBuffer : noObjectBlock, 
+    repairTransmission : nil, currentTransPos : 0 :: 0, 
+    lastNewDataId : 0 :: 0, lastRepairDataId : 0 :: 0,
+    dataTransTimer : INF, accNACKcontent : nil,
+    invalidRepairRequests : nil,
+    NACKaccumTimer : INF, repairCycleHoldoffTimer : INF, 
+    FLUSHtimer : INF, FLUSHcounter : 0, SQUELCHholdoffTimer : INF >
+
+  < sender-router : Link | 
+    upNode : sender, downNode : router, upstream : nil,
+    downstream : nil, propDelay : 5, bandwidth : 10 >
+
+  < router : Router |
+    parent : sender, children : rec1 rec2,
+    buffer : (nil).MsgList, bufferCap : 2, queuingDelay : 12 >  
+
+  < router-rec1 : Link | 
+    upNode : router, downNode : rec1, upstream : nil,
+    downstream : nil, propDelay : 11, bandwidth : 1 >
+
+  < router-rec2 : Link | 
+    upNode : router, downNode : rec2, upstream : nil,
+    downstream : nil, propDelay : 15, bandwidth : 1 >
+
+  < rec1 : DTreceiverAlone |
+    clock : 0, randomSeed : 77, NormRobustFactor : 4,
+    GRTT : 0, gsize : 2, parent : router, CLR : false,
+    receiveBuffer : nil, nextExpectedDUI : 1 :: 1,
+    sendersCurrTransPos : 0 :: 0,
+    repairNeeds : nil, repairRequests : nil, extRepRequests : nil,
+    NACKbackoffTimer : INF, NACKcycleHoldoffTimer : INF >
+
+  < rec2 : DTreceiverAlone |
+    clock : 0, randomSeed : 23, NormRobustFactor : 4,
+    GRTT : 0, gsize : 2, parent : router, CLR : true,
+    receiveBuffer : nil, nextExpectedDUI : 1 :: 1,
+    sendersCurrTransPos : 0 :: 0,
+    repairNeeds : nil, repairRequests : nil, extRepRequests : nil,
+    NACKbackoffTimer : INF, NACKcycleHoldoffTimer : INF >
+
+  < recApp1 : ReceiverApplication | 
+    receiver : rec1, dataBuffer : (nil).DataUnitIdList >
+
+  < recApp2 : ReceiverApplication | 
+    receiver : rec2, dataBuffer : (nil).DataUnitIdList >} .
+
+endtom)
+
+***(trew data1 with no time limit .)
+******q
+***(tsearch data1 =>*
+***{< O:Oid : DTreceiverAlone |
+***repairNeeds : (NZN:NzNat :: N:Nat) ; DUIL:DataUnitIdList,
+***ATTS:AttributeSet >
+***REST:Configuration}
+***in time < 350 .)
+***q
+
+***(tsearch [1] data1 =>*
+***{< sender : DTsenderAlone | dataBuffer : noObjectBlock,
+***flushBuffer : noObjectBlock, ATTS:AttributeSet >
+***(outOfLink NACK(DL:DataUnitIdList, T:Time, B:Bool)
+***from router to sender)
+***REST:Configuration}
+***in time < 5000 .)
+***q
+
+(tomod MODEL-CHECK-NORM-DT-1 is
+  including TIMED-MODEL-CHECKER .
+  protecting NORM-DT-1 .
+
+  *** Always when a data packet is sent, eventually it will arrive at both
+  *** receivers.
+  *** [] (p(x) -> (<> q(x) /\ <> r(x)))
+  *** ekv. p(x) => (<> q(x) /\ <> r(x))
+
+  vars DUI DUI' : DataUnitId . var NZN : NzNat . var T : Time . 
+  var B : Bool . vars ML ML' : MsgList . var REST : Configuration .
+
+  op packetIsSent : DataUnitId -> Prop [ctor] .
+
+  eq {(intoLink DATA(DUI, NZN, T, B) from sender to router) REST}
+    |= packetIsSent(DUI') = DUI == DUI' . 
+
+  op rec1OK : DataUnitId -> Prop [ctor] .
+  op rec2OK : DataUnitId -> Prop [ctor] .
+
+***(Noe gikk galt med modellsjekking av disse proposisjonene!
+  eq {< rec1 : DTreceiverAlone | 
+            receiveBuffer : ML ++ DATA(DUI, NZN, T, B) ++ ML' > 
+      REST}
+    |= rec1OK(DUI') = DUI == DUI' .
+
+  eq {< rec2 : DTreceiverAlone | 
+            receiveBuffer : ML ++ DATA(DUI, NZN, T, B) ++ ML' > 
+      REST}
+    |= rec2OK(DUI') = DUI == DUI' .
+)
+
+  eq {< rec1 : DTreceiverAlone | sendersCurrTransPos : DUI > 
+      REST}
+    |= rec1OK(DUI') = DUI == DUI' .
+
+  eq {< rec2 : DTreceiverAlone | sendersCurrTransPos : DUI > 
+      REST}
+    |= rec2OK(DUI') = DUI == DUI' .
+
+endtom)
+
+***(find latest data1 =>*
+***{< O:Oid : DTreceiverAlone | sendersCurrTransPos : 1 :: 10,
+***ATTS:AttributeSet >
+***REST:Configuration}
+***with no time limit .)
+***(mc data1 |=t
+***(<> packetIsSent(1 :: 1)) /\
+***(packetIsSent(1 :: 1) => (<> rec1OK(1 :: 1) /\ <> rec2OK(1 :: 1)))
+***in time <= 200 .)
+***
+***(mc data1 |=t
+***(<> packetIsSent(1 :: 2)) /\
+***(packetIsSent(1 :: 2) => (<> rec1OK(1 :: 2) /\ <> rec2OK(1 :: 2)))
+***in time <= 200 .)
+***
+***(mc data1 |=t
+***(<> packetIsSent(1 :: 3)) /\
+***(packetIsSent(1 :: 3) => (<> rec1OK(1 :: 3) /\ <> rec2OK(1 :: 3)))
+***in time <= 200 .)
+***
+***(mc data1 |=t
+***(<> packetIsSent(1 :: 4)) /\
+***(packetIsSent(1 :: 4) => (<> rec1OK(1 :: 4) /\ <> rec2OK(1 :: 4)))
+***in time <= 200 .)
+***
+***(mc data1 |=t
+***(<> packetIsSent(1 :: 5)) /\
+***(packetIsSent(1 :: 5) => (<> rec1OK(1 :: 5) /\ <> rec2OK(1 :: 5)))
+***in time <= 200 .)
+***
+***(mc data1 |=t
+***(<> packetIsSent(1 :: 6)) /\
+***(packetIsSent(1 :: 6) => (<> rec1OK(1 :: 6) /\ <> rec2OK(1 :: 6)))
+***in time <= 200 .)
+***
+***(mc data1 |=t
+***(<> packetIsSent(1 :: 7)) /\
+***(packetIsSent(1 :: 7) => (<> rec1OK(1 :: 7) /\ <> rec2OK(1 :: 7)))
+***in time <= 200 .)
+***
+***(mc data1 |=t
+***(<> packetIsSent(1 :: 8)) /\
+***(packetIsSent(1 :: 8) => (<> rec1OK(1 :: 8) /\ <> rec2OK(1 :: 8)))
+***in time <= 200 .)
+***
+***(mc data1 |=t
+***(<> packetIsSent(1 :: 9)) /\
+***(packetIsSent(1 :: 9) => (<> rec1OK(1 :: 9) /\ <> rec2OK(1 :: 9)))
+***in time <= 200 .)
+***
+***(mc data1 |=t
+***(<> packetIsSent(1 :: 10)) /\
+***(packetIsSent(1 :: 10) => (<> rec1OK(1 :: 10) /\ <> rec2OK(1 :: 10)))
+***in time <= 200 .)
+***q
+
+
+(tomod NORM-DT-2 is
+  inc NORM-DATA-TRANSMISSION .
+
+
+  ops senderApp sender rec1 rec2 recApp1 recApp2  router 
+    sender-router router-rec1 router-rec2 : -> Oid .
+  op data2 : -> GlobalSystem .
+
+*** Denne tilstanden er ferdig definert!
+*** Her blir det feil under kjøring. Kan spores tilbake til ufullstendig
+*** beskrevet flushprosess.
+  eq data2 =
+ {< senderApp : SenderApplication | 
+    dataBuffer : objectBlock(OBJECT(1, 70, 0) ++ OBJECT(2, 70, 0)) 
+             ++  objectBlock(OBJECT(3, 70, 0) ++ OBJECT(4, 70, 0)) >
+
+  < sender : DTsenderAlone | 
+    clock : 0, NormRobustFactor : 4, GRTT : 106, gsize : 2, 
+    children : router, sendRate : 10, 
+    dataBuffer : noObjectBlock, flushBuffer : noObjectBlock, 
+    repairTransmission : nil, currentTransPos : 0 :: 0, 
+    lastNewDataId : 0 :: 0, lastRepairDataId : 0 :: 0,
+    dataTransTimer : INF, accNACKcontent : nil,
+    invalidRepairRequests : nil,
+    NACKaccumTimer : INF, repairCycleHoldoffTimer : INF, 
+    FLUSHtimer : INF, FLUSHcounter : 0, SQUELCHholdoffTimer : INF >
+
+  < sender-router : Link | 
+    upNode : sender, downNode : router, upstream : nil,
+    downstream : nil, propDelay : 5, bandwidth : 10 >
+
+  < router : Router |
+    parent : sender, children : rec1 rec2,
+    buffer : (nil).MsgList, bufferCap : 3, queuingDelay : 30 >  
+
+  < router-rec1 : Link | 
+    upNode : router, downNode : rec1, upstream : nil,
+    downstream : nil, propDelay : 11, bandwidth : 1 >
+
+  < router-rec2 : Link | 
+    upNode : router, downNode : rec2, upstream : nil,
+    downstream : nil, propDelay : 15, bandwidth : 1 >
+
+  < rec1 : DTreceiverAlone |
+    clock : 0, randomSeed : 77, NormRobustFactor : 4,
+    GRTT : 0, gsize : 2, parent : router, CLR : false,
+    receiveBuffer : nil, nextExpectedDUI : 1 :: 1,
+    sendersCurrTransPos : 0 :: 0,
+    repairNeeds : nil, repairRequests : nil, extRepRequests : nil,
+    NACKbackoffTimer : INF, NACKcycleHoldoffTimer : INF >
+
+  < rec2 : DTreceiverAlone |
+    clock : 0, randomSeed : 23, NormRobustFactor : 4,
+    GRTT : 0, gsize : 2, parent : router, CLR : true,
+    receiveBuffer : nil, nextExpectedDUI : 1 :: 1,
+    sendersCurrTransPos : 0 :: 0,
+    repairNeeds : nil, repairRequests : nil, extRepRequests : nil,
+    NACKbackoffTimer : INF, NACKcycleHoldoffTimer : INF >
+
+  < recApp1 : ReceiverApplication | 
+    receiver : rec1, dataBuffer : (nil).DataUnitIdList >
+
+  < recApp2 : ReceiverApplication | 
+    receiver : rec2, dataBuffer : (nil).DataUnitIdList >} .
+
+
+endtom)
+
+(trew data2 in time < 5000 .)
+q
+
+
+
+**********************************************
+
+
+***eof
+
+MODULSØPPELDYNGE:
+
+
+(tomod NORM-DT-2 is 
+  
+  inc NORM-DATA-TRANSMISSION .
+
+  ops senderApp recApp1 recApp2 recApp3 sender rec1 rec2 rec3 
+    router1 router2 sender-router1 router1-rec1 router1-router2 
+    router2-rec2 router2-rec3 : -> Oid .
+
+  op data2 : -> GlobalSystem .
+
+
+*** Eksempel på ikke-vellykket overføring: recApp1 får alle data,
+*** recApp2 of recApp3 får halvparten.
+  eq data2 =
+   {< senderApp : SenderApplication | 
+      dataBuffer : objectBlock(OBJECT(1, 50, 0) ++ OBJECT(2, 50, 0)) 
+        ++ objectBlock(OBJECT(3, 50, 0) ++ OBJECT(4, 50, 0)) >
+
+    < sender : DTsenderAlone | 
+      clock : 0, NormRobustFactor : 4, GRTT : 76, gsize : 3, 
+      children : router1, sendRate : 8, 
+      dataBuffer : noObjectBlock, flushBuffer : noObjectBlock, 
+      repairTransmission : (nil).DataUnitIdList, currentTransPos : 0 :: 0,
+      lastNewDataId : 0 :: 0, lastRepairDataId : 0 :: 0, dataTransTimer : INF,
+      accNACKcontent : (nil).DataUnitIdList, 
+      invalidRepairRequests : (nil).DataUnitIdList, NACKaccumTimer : INF,
+      repairCycleHoldoffTimer : INF, FLUSHtimer : INF, FLUSHcounter : 0,
+      SQUELCHholdoffTimer : INF >
+ 
+    < router1 : Router |
+      parent : sender, children : rec1 router2,
+      buffer : (nil).MsgList, bufferCap : 3, queuingDelay : 5 >
+
+    < router2 : Router | 
+      parent : router1, children : rec2 rec3,
+      buffer : (nil).MsgList, bufferCap : 2, queuingDelay : 4 >
+
+    < sender-router1 : Link | 
+      upNode : sender, downNode : router1, upstream : nil,
+      downstream : nil, propDelay : 10, bandwidth : 10 >
+  
+    < router1-rec1 : Link | 
+      upNode : router1, downNode : rec1, upstream : nil,
+      downstream : nil, propDelay : 5, bandwidth : 10 >
+
+    < router1-router2 : Link |
+      upNode : router1, downNode : router2, upstream : nil,
+      downstream : nil, propDelay : 5, bandwidth : 10 >
+
+    < router2-rec2 : Link | 
+      upNode : router2, downNode : rec2, upstream : nil,
+      downstream : nil, propDelay : 5, bandwidth : 10 >
+
+    < router2-rec3 : Link | 
+      upNode : router2, downNode : rec3, upstream : nil,
+      downstream : nil, propDelay : 10, bandwidth : 1 >
+
+    < rec1 : DTreceiverAlone | 
+      clock : 0, randomSeed : 77, NormRobustFactor : 4,
+      GRTT : 0, gsize : 3, parent : router1, CLR : false,
+      receiveBuffer : nil, nextExpectedDUI : 1 :: 1,
+      sendersCurrTransPos : 0 :: 0,
+      repairNeeds : nil, repairRequests : nil, extRepRequests : nil,
+      NACKbackoffTimer : INF, NACKcycleHoldoffTimer : INF >
+
+    < rec2 : DTreceiverAlone | 
+      clock : 0, randomSeed : 973, NormRobustFactor : 4,
+      GRTT : 0, gsize : 3, parent : router2, CLR : false,
+      receiveBuffer : nil, nextExpectedDUI : 1 :: 1,
+      sendersCurrTransPos : 0 :: 0,
+      repairNeeds : nil, repairRequests : nil, extRepRequests : nil,
+      NACKbackoffTimer : INF, NACKcycleHoldoffTimer : INF >
+
+    < rec3 : DTreceiverAlone | 
+      clock : 0, randomSeed : 15, NormRobustFactor : 4,
+      GRTT : 0, gsize : 3, parent : router2, CLR : true,
+      receiveBuffer : nil, nextExpectedDUI : 1 :: 1,
+      sendersCurrTransPos : 0 :: 0,
+      repairNeeds : nil, repairRequests : nil, extRepRequests : nil,
+      NACKbackoffTimer : INF, NACKcycleHoldoffTimer : INF >
+  
+    < recApp1 : ReceiverApplication |
+      receiver : rec1, dataBuffer : (nil).DataUnitIdList >
+
+    < recApp2 : ReceiverApplication | 
+      receiver : rec2, dataBuffer : (nil).DataUnitIdList >
+
+    < recApp3 : ReceiverApplication | 
+      receiver : rec3, dataBuffer : (nil).DataUnitIdList >} .
+
+
+endtom)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(tomod NORM-DT-3 is 
+  
+  inc NORM-DATA-TRANSMISSION .
+
+  ops senderApp recApp1 recApp2 recApp3 sender rec1 rec2 rec3 
+    router1 router2 sender-router1 router1-rec1 router1-router2 
+    router2-rec2 router2-rec3 : -> Oid .
+
+  op data3 : -> GlobalSystem .
+
+
+*** Eksempel på ikke-vellykket overføring: recApp1 får alle data,
+*** recApp2 of recApp3 får halvparten.
+  eq data3 =
+   {< senderApp : SenderApplication | 
+      dataBuffer : objectBlock(OBJECT(1, 70, 0) ++ OBJECT(2, 70, 0)) 
+        ++ objectBlock(OBJECT(3, 70, 0) ++ OBJECT(4, 70, 0)) >
+
+    < sender : DTsenderAlone | 
+      clock : 0, NormRobustFactor : 4, GRTT : 178, gsize : 3, 
+      children : router1, sendRate : 5, 
+      dataBuffer : noObjectBlock, flushBuffer : noObjectBlock, 
+      repairTransmission : (nil).DataUnitIdList, currentTransPos : 0 :: 0,
+      lastNewDataId : 0 :: 0, lastRepairDataId : 0 :: 0, dataTransTimer : INF,
+      accNACKcontent : (nil).DataUnitIdList, 
+      invalidRepairRequests : (nil).DataUnitIdList, NACKaccumTimer : INF,
+      repairCycleHoldoffTimer : INF, FLUSHtimer : INF, FLUSHcounter : 0,
+      SQUELCHholdoffTimer : INF >
+ 
+    < router1 : Router |
+      parent : sender, children : rec1 router2,
+      buffer : (nil).MsgList, bufferCap : 10, queuingDelay : 30 >
+
+    < router2 : Router | 
+      parent : router1, children : rec2 rec3,
+      buffer : (nil).MsgList, bufferCap : 4, queuingDelay : 20 >
+
+    < sender-router1 : Link | 
+      upNode : sender, downNode : router1, upstream : nil,
+      downstream : nil, propDelay : 10, bandwidth : 10 >
+  
+    < router1-rec1 : Link | 
+      upNode : router1, downNode : rec1, upstream : nil,
+      downstream : nil, propDelay : 5, bandwidth : 10 >
+
+    < router1-router2 : Link |
+      upNode : router1, downNode : router2, upstream : nil,
+      downstream : nil, propDelay : 5, bandwidth : 10 >
+
+    < router2-rec2 : Link | 
+      upNode : router2, downNode : rec2, upstream : nil,
+      downstream : nil, propDelay : 5, bandwidth : 10 >
+
+    < router2-rec3 : Link | 
+      upNode : router2, downNode : rec3, upstream : nil,
+      downstream : nil, propDelay : 20, bandwidth : 1 >
+
+    < rec1 : DTreceiverAlone | 
+      clock : 0, randomSeed : 77, NormRobustFactor : 4,
+      GRTT : 0, gsize : 3, parent : router1, CLR : false,
+      receiveBuffer : nil, nextExpectedDUI : 1 :: 1,
+      sendersCurrTransPos : 0 :: 0,
+      repairNeeds : nil, repairRequests : nil, extRepRequests : nil,
+      NACKbackoffTimer : INF, NACKcycleHoldoffTimer : INF >
+
+    < rec2 : DTreceiverAlone | 
+      clock : 0, randomSeed : 973, NormRobustFactor : 4,
+      GRTT : 0, gsize : 3, parent : router2, CLR : false,
+      receiveBuffer : nil, nextExpectedDUI : 1 :: 1,
+      sendersCurrTransPos : 0 :: 0,
+      repairNeeds : nil, repairRequests : nil, extRepRequests : nil,
+      NACKbackoffTimer : INF, NACKcycleHoldoffTimer : INF >
+
+    < rec3 : DTreceiverAlone | 
+      clock : 0, randomSeed : 15, NormRobustFactor : 4,
+      GRTT : 0, gsize : 3, parent : router2, CLR : true,
+      receiveBuffer : nil, nextExpectedDUI : 1 :: 1,
+      sendersCurrTransPos : 0 :: 0,
+      repairNeeds : nil, repairRequests : nil, extRepRequests : nil,
+      NACKbackoffTimer : INF, NACKcycleHoldoffTimer : INF >
+  
+    < recApp1 : ReceiverApplication |
+      receiver : rec1, dataBuffer : (nil).DataUnitIdList >
+
+    < recApp2 : ReceiverApplication | 
+      receiver : rec2, dataBuffer : (nil).DataUnitIdList >
+
+    < recApp3 : ReceiverApplication | 
+      receiver : rec3, dataBuffer : (nil).DataUnitIdList >} .
+
+
+endtom)
+
+***(trew data2 in time < 15000 .)
+***q
+
+
+
+
+
+(tomod MINI is
+  inc NORM-DATA-TRANSMISSION .
+
+  ops senderApp recApp sender rec router sender-router router-rec : 
+    -> Oid [ctor] .
+
+  op mini : -> GlobalSystem . 
+  
+  eq mini =
+ {< senderApp : SenderApplication | 
+      dataBuffer : objectBlock(OBJECT(1, 50, 0) ++ OBJECT(2, 30, 0)) 
+        ++ objectBlock(OBJECT(3, 30, 0) ++ OBJECT(4, 10, 0)) >
+
+    < sender : DTsenderAlone | 
+      clock : 0, NormRobustFactor : 4, GRTT : 104, gsize : 1, 
+      children : router, sendRate : 10, 
+      dataBuffer : noObjectBlock, flushBuffer : noObjectBlock, 
+      repairTransmission : (nil).DataUnitIdList, currentTransPos : 0 :: 0,
+      lastNewDataId : 0 :: 0, lastRepairDataId : 0 :: 0, dataTransTimer : INF,
+      accNACKcontent : (nil).DataUnitIdList, 
+      invalidRepairRequests : (nil).DataUnitIdList, NACKaccumTimer : INF,
+      repairCycleHoldoffTimer : INF, FLUSHtimer : INF, FLUSHcounter : 0,
+      SQUELCHholdoffTimer : INF >
+
+    < sender-router : Link | 
+      upNode : sender, downNode : router, upstream : nil,
+      downstream : nil, propDelay : 10, bandwidth : 1 >
+
+  < router : Router |
+    parent : sender, children : rec,
+    buffer : (nil).MsgList, bufferCap : 3, queuingDelay : 30 >
+  
+    < router-rec : Link | 
+      upNode : router, downNode : rec, upstream : nil,
+      downstream : nil, propDelay : 10, bandwidth : 1 >
+
+  < rec : DTreceiverAlone |
+    clock : 0, randomSeed : 23, NormRobustFactor : 4,
+    GRTT : 0, gsize : 1, parent : router, CLR : true,
+    receiveBuffer : nil, nextExpectedDUI : 1 :: 1,
+    sendersCurrTransPos : 0 :: 0,
+    repairNeeds : nil, repairRequests : nil, extRepRequests : nil,
+    NACKbackoffTimer : INF, NACKcycleHoldoffTimer : INF >
+
+  < recApp : ReceiverApplication | 
+    receiver : rec, dataBuffer : (nil).DataUnitIdList >} .
+
+endtom)
+
+(tomod MODEL-CHECK-MINI is
+  including TIMED-MODEL-CHECKER .
+  protecting MINI .
+
+  *** Always when a data packet is sent, eventually it will arrive at the
+  *** receiver.
+  *** [] (p(x) -> <> q(x))
+  *** ekv. p(x) => <> q(x)
+
+  vars DUI DUI' : DataUnitId . var NZN : NzNat . var T : Time . 
+  var B : Bool . vars ML ML' : MsgList . var REST : Configuration .
+
+  op packetIsSent : DataUnitId -> Prop [ctor] .
+
+  eq {(intoLink DATA(DUI, NZN, T, B) from sender to router) REST}
+    |= packetIsSent(DUI') = DUI == DUI' . 
+
+  op recOK : DataUnitId -> Prop [ctor] .
+
+  eq {< rec : DTreceiverAlone | 
+            receiveBuffer : ML ++ DATA(DUI, NZN, T, B) ++ ML' > 
+      REST}
+    |= recOK(DUI') = DUI == DUI' .
+  
+  *** Både søk fra og modellsjekking av tilstanden aborterer!
+
+endtom)

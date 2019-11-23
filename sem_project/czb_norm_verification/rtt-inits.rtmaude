@@ -1,0 +1,266 @@
+*** INITSTATES FOR THE RTT MODULE
+
+load rtt.rtmaude
+
+***set trace on .
+***trace exclude REAL-TIME-MAUDE .
+***set trace substitution off .
+***set trace eq off .
+
+
+*** ANALYSERE RTT UTFRA ENKEL TILSTAND ***
+
+(tomod NORM-RTT-1 is
+  inc NORM-RTT .
+
+  ops sender router rec1 rec2 sender-router 
+    router-rec1 router-rec2 : -> Oid [ctor] .
+  op rtt1 :  -> GlobalSystem .
+
+  eq rtt1 =
+   {< sender : RTTsenderAlone |
+      children : router, clock : 0, 
+      NormRobustFactor : 4, GRTT : 500, gsize : 2,
+      sendRate : 50, sendRateInKbps : 256, CCtransTimer : INF,
+      peakRTT : 0, CLRresponse : false, lowPeakRTTcounter : 0 >
+    < router : Router |
+      parent : sender, children : rec1 rec2,
+      buffer : nil, bufferCap : 5, queuingDelay : 3 >
+    < rec1 : RTTreceiverAlone |
+      parent : router, clock : 0, randomSeed : 799, 
+      NormRobustFactor : 4, GRTT : 0, gsize : 2,
+      ACKtimer : INF, ACKholdoffTimer : INF, timestamp : 0,
+      receivedTimestamp : 0, rcvRateInKbps : 256, sndRateInKbps : 0,
+      CLR : false, nacksToBeSent : nil >
+    < rec2 : RTTreceiverAlone |
+      parent : router, clock : 0, randomSeed : 173, 
+      NormRobustFactor : 4, GRTT : 0, gsize : 2,
+      ACKtimer : INF, ACKholdoffTimer : INF, timestamp : 0,
+      receivedTimestamp : 0, rcvRateInKbps : 256, sndRateInKbps : 0,
+      CLR : false, nacksToBeSent : nil >     
+    < sender-router : Link |
+      upNode : sender, downNode : router, 
+      upstream : nil, downstream : nil,
+      propDelay : 14, bandwidth : 3 >      
+    < router-rec1 : Link |
+      upNode : router, downNode : rec1, 
+      upstream : nil, downstream : nil,
+      propDelay : 19, bandwidth : 3 >    
+    < router-rec2 : Link |
+      upNode : router, downNode : rec2, 
+      upstream : nil, downstream : nil,
+      propDelay : 19, bandwidth : 3 >} .
+
+  op rtt1b : -> GlobalSystem .
+  eq rtt1b =
+  {< rec1 : RTTreceiverAlone | ACKholdoffTimer : 273, ACKtimer : INF, 
+    CLR : false, GRTT : 78, NormRobustFactor : 4, clock : 21597, gsize : 2,
+    nacksToBeSent : nil, parent : router, randomSeed : 5154, 
+    rcvRateInKbps : 256, receivedTimestamp : 21254, sndRateInKbps : 256, 
+    timestamp : 21216 >
+  < rec2 : RTTreceiverAlone | ACKholdoffTimer : 273, ACKtimer : INF, 
+    CLR : false, GRTT : 78, NormRobustFactor : 4, clock : 21597, gsize : 2, 
+    nacksToBeSent : nil, parent : router, randomSeed : 2674, 
+    rcvRateInKbps : 256, receivedTimestamp : 21254, sndRateInKbps : 256, 
+    timestamp : 21216 >
+  < router : Router | bufferCap : 5, buffer : nil, children :(rec1 rec2),
+    parent : sender, queuingDelay : 3 >
+  < router-rec1 : Link | bandwidth : 3, downNode : rec1, 
+    downstream : dly(ACK(21520,256,false),4), propDelay : 19, 
+    upNode : router, upstream : nil >
+  < router-rec2 : Link | bandwidth : 3, downNode : rec2, 
+    downstream : dly(ACK(21520,256,false),4), propDelay : 19, 
+    upNode : router, upstream : nil >
+  < sender : RTTsenderAlone | CCtransTimer : 9, CLRresponse : false, 
+    GRTT : 78, NormRobustFactor : 4, children : router, clock : 21597, 
+    gsize : 2, lowPeakRTTcounter : 1, peakRTT : 77, sendRateInKbps : 256, 
+    sendRate : 50 >
+  < sender-router : Link | bandwidth : 3, downNode : router, 
+    downstream : nil, propDelay : 14, upNode : sender, upstream : nil >} .
+endtom)
+
+
+***(trew rtt1 in time <= 25000 .)
+***q
+
+
+(tomod MODEL-CHECK-NORM-RTT-1 is
+  including TIMED-MODEL-CHECKER .
+  protecting NORM-RTT-1 .
+
+  op GRTTis78 : -> Prop [ctor] .
+  eq {< sender : RTTsenderAlone | GRTT : 78 > 
+      < rec1 : RTTreceiverAlone | GRTT : 78 > 
+      < rec2 : RTTreceiverAlone | GRTT : 78 >
+      REST:Configuration} |= GRTTis78 = true .
+ 
+  op peakRTTis77 : -> Prop [ctor] .
+  eq {< sender : RTTsenderAlone | peakRTT : 77 > REST:Configuration}
+    |= peakRTTis77 = true .
+
+endtom)
+
+
+******************************************************************
+
+
+*** ANALYSERE RTT UTFRA MER KOMPLEKS STARTTILSTAND ***
+
+
+
+
+(tomod NORM-RTT-2 is
+  inc NORM-RTT .
+
+  ops sender router1 router2 rec1 rec2 rec3 
+    sender-router1 router1-rec1 router1-router2  
+    router2-rec2 router2-rec3 : -> Oid [ctor] .
+
+  op rtt2 : -> GlobalSystem .
+
+  eq rtt2 =
+   {< sender : RTTsenderAlone |
+      children : router1, clock : 0, 
+      NormRobustFactor : 4, GRTT : 500, gsize : 3,
+      sendRate : 40, sendRateInKbps : 256, CCtransTimer : INF,
+      peakRTT : 0, CLRresponse : false, lowPeakRTTcounter : 0 >
+    < router1 : Router |
+      parent : sender, children : rec1 router2,
+      buffer : nil, bufferCap : 5, queuingDelay : 3 >
+    < router2 : Router |
+      parent : router1, children : rec2 rec3,
+      buffer : nil, bufferCap : 5, queuingDelay : 3 >
+    < rec1 : RTTreceiverAlone |
+      parent : router1, clock : 0, randomSeed : 779, 
+      NormRobustFactor : 4, GRTT : 0, gsize : 3,
+      ACKtimer : INF, ACKholdoffTimer : INF, timestamp : 0,
+      receivedTimestamp : 0, rcvRateInKbps : 256, sndRateInKbps : 0,
+      CLR : false, nacksToBeSent : nil >
+    < rec2 : RTTreceiverAlone |
+      parent : router2, clock : 0, randomSeed : 13, 
+      NormRobustFactor : 4, GRTT : 0, gsize : 3,
+      ACKtimer : INF, ACKholdoffTimer : INF, timestamp : 0,
+      receivedTimestamp : 0, rcvRateInKbps : 256, sndRateInKbps : 0,
+      CLR : true, nacksToBeSent : nil >     
+    < rec3 : RTTreceiverAlone |
+      parent : router2, clock : 0, randomSeed : 9, 
+      NormRobustFactor : 4, GRTT : 0, gsize : 3,
+      ACKtimer : INF, ACKholdoffTimer : INF, timestamp : 0,
+      receivedTimestamp : 0, rcvRateInKbps : 256, sndRateInKbps : 0,
+      CLR : false, nacksToBeSent : nil >
+    < sender-router1 : Link |
+      upNode : sender, downNode : router1, 
+      upstream : nil, downstream : nil,
+      propDelay : 5, bandwidth : 10 >      
+    < router1-rec1 : Link |
+      upNode : router1, downNode : rec1, 
+      upstream : nil, downstream : nil,
+      propDelay : 20, bandwidth : 1 >      
+    < router1-router2 : Link |
+      upNode : router1, downNode : router2, 
+      upstream : nil, downstream : nil,
+      propDelay : 21, bandwidth : 1 >    
+    < router2-rec2 : Link |
+      upNode : router2, downNode : rec2, 
+      upstream : nil, downstream : nil,
+      propDelay : 10, bandwidth : 3 >        
+    < router2-rec3 : Link |
+      upNode : router2, downNode : rec3, 
+      upstream : nil, downstream : nil,
+      propDelay : 7, bandwidth : 5 >} .   
+
+endtom)
+
+(tomod MODEL-CHECK-NORM-RTT-2 is
+  including TIMED-MODEL-CHECKER .
+  protecting NORM-RTT-2 .
+
+  op GRTTis92 : -> Prop [ctor] .
+
+  eq {< sender : RTTsenderAlone | GRTT : 92 > 
+      < rec1 : RTTreceiverAlone | GRTT : 92 >
+      < rec2 : RTTreceiverAlone | GRTT : 92 >
+      < rec3 : RTTreceiverAlone | GRTT : 92 > REST:Configuration} 
+    |= GRTTis92 = true .
+
+  op peakRTTis90 : -> Prop [ctor] .
+
+  eq {< sender : RTTsenderAlone | peakRTT : 90 > REST:Configuration}
+    |= peakRTTis90 = true .
+
+endtom)
+
+
+
+
+eof
+
+
+*** 8 noder, 15 objekter - for stor for modellsjekking 
+  eq init2 =
+   {< sender : RTTsenderAlone |
+      children : router1 router3, clock : 0, 
+      NormRobustFactor : 4, GRTT : 500, gsize : 4,
+      sendRate : 40, sendRateInKbps : 256, CCtransTimer : INF,
+      peakRTT : 0, CLRresponse : false, lowPeakRTTcounter : 0 >
+    < router1 : Router |
+      parent : sender, children : rec1 router2,
+      buffer : nil, bufferCap : 5, queuingDelay : 3 >
+    < router2 : Router |
+      parent : router1, children : rec2 rec3,
+      buffer : nil, bufferCap : 5, queuingDelay : 3 >
+    < router3 : Router |
+      parent : sender, children : rec4,
+      buffer : nil, bufferCap : 5, queuingDelay : 3 >
+    < rec1 : RTTreceiverAlone |
+      parent : router1, clock : 0, randomSeed : 779, 
+      NormRobustFactor : 4, GRTT : 0, gsize : 4,
+      ACKtimer : INF, ACKholdoffTimer : INF, timestamp : 0,
+      receivedTimestamp : 0, rcvRateInKbps : 256, sndRateInKbps : 0,
+      CLR : false, nacksToBeSent : nil >
+    < rec2 : RTTreceiverAlone |
+      parent : router2, clock : 0, randomSeed : 13, 
+      NormRobustFactor : 4, GRTT : 0, gsize : 4,
+      ACKtimer : INF, ACKholdoffTimer : INF, timestamp : 0,
+      receivedTimestamp : 0, rcvRateInKbps : 256, sndRateInKbps : 0,
+      CLR : true, nacksToBeSent : nil >     
+    < rec3 : RTTreceiverAlone |
+      parent : router2, clock : 0, randomSeed : 9, 
+      NormRobustFactor : 4, GRTT : 0, gsize : 4,
+      ACKtimer : INF, ACKholdoffTimer : INF, timestamp : 0,
+      receivedTimestamp : 0, rcvRateInKbps : 256, sndRateInKbps : 0,
+      CLR : false, nacksToBeSent : nil >
+    < rec4 : RTTreceiverAlone |
+      parent : router3, clock : 0, randomSeed : 51, 
+      NormRobustFactor : 4, GRTT : 0, gsize : 4,
+      ACKtimer : INF, ACKholdoffTimer : INF, timestamp : 0,
+      receivedTimestamp : 0, rcvRateInKbps : 256, sndRateInKbps : 0,
+      CLR : false, nacksToBeSent : nil >
+    < sender-router1 : Link |
+      upNode : sender, downNode : router1, 
+      upstream : nil, downstream : nil,
+      propDelay : 5, bandwidth : 10 >      
+    < router1-rec1 : Link |
+      upNode : router1, downNode : rec1, 
+      upstream : nil, downstream : nil,
+      propDelay : 20, bandwidth : 1 >      
+    < router1-router2 : Link |
+      upNode : router1, downNode : router2, 
+      upstream : nil, downstream : nil,
+      propDelay : 21, bandwidth : 1 >    
+    < router2-rec2 : Link |
+      upNode : router2, downNode : rec2, 
+      upstream : nil, downstream : nil,
+      propDelay : 10, bandwidth : 3 >        
+    < router2-rec3 : Link |
+      upNode : router2, downNode : rec3, 
+      upstream : nil, downstream : nil,
+      propDelay : 7, bandwidth : 5 >      
+    < sender-router3 : Link |
+      upNode : sender, downNode : router3, 
+      upstream : nil, downstream : nil,
+      propDelay : 5, bandwidth : 10 >      
+    < router3-rec4 : Link |
+      upNode : router3, downNode : rec4, 
+      upstream : nil, downstream : nil,
+      propDelay : 15, bandwidth : 3 >} .        
