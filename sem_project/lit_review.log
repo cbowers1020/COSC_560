@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019) (preloaded format=pdflatex 2019.5.8)  2 NOV 2019 17:45
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019) (preloaded format=pdflatex 2019.5.8)  13 DEC 2019 14:05
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -25,13 +25,18 @@ File: ot1ptm.fd 2001/06/04 font definitions for OT1/ptm.
 -- Using 8.5in x 11in (letter) paper.
 -- Using PDF output.
 \@IEEEnormalsizeunitybaselineskip=\dimen105
--- This is an 11 point document.
+-- This is a 10 point document.
 \CLASSINFOnormalsizebaselineskip=\dimen106
 \CLASSINFOnormalsizeunitybaselineskip=\dimen107
 \IEEEnormaljot=\dimen108
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <6> not available
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <5> not available
 (Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1090.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <6> not available
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <5> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 1090.
+
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1090.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <7> not available
 (Font)              Font shape `OT1/ptm/b/it' tried instead on input line 1090.
 
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <8> not available
@@ -572,7 +577,7 @@ File: lgrcmr.fd 2017/07/29 v1.2 Greek European Computer Regular
 )
 LaTeX Font Info:    ... okay on input line 15.
 
--- Lines per column: 46 (approximate, difference = 8.23825pt).
+-- Lines per column: 52 (approximate, difference = 0.62227pt).
 (/usr/local/texlive/2019/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count100
@@ -652,77 +657,69 @@ File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
 
 {/usr/local/texlive/2019/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] (./lit_
 review.toc
-LaTeX Font Info:    Calculating math sizes for size <11> on input line 3.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <11> on input line 3.
+(Font)              <7> on input line 3.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <7.69997> on input line 3.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5.5> on input line 3.
-
-Underfull \hbox (badness 10000) in paragraph at lines 10--10
- [][] []\OT1/ptm/m/n/11 NACK Ori-ented Re-li-able 
- []
-
+(Font)              <5> on input line 3.
 )
 \tf@toc=\write3
 \openout3 = `lit_review.toc'.
 
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <9> on input line 29.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5> on input line 29.
- [1
 
-] [2] [3] [4]
-Underfull \hbox (badness 3612) in paragraph at lines 81--82
- \OT1/ptm/m/it/11 1) Se-cu-rity: [][] \OT1/ptm/m/n/11 Per-haps some-what sur-pr
-is-ingly,
+[1
+
+]
+Underfull \hbox (badness 2253) in paragraph at lines 56--57
+[]\OT1/ptm/m/n/10 The pa-per con-cludes by pro-vid-ing ex-am-ples of
  []
 
+[2] [3]
 LaTeX Font Info:    Try loading font information for LGR+ptm on input line 83.
 LaTeX Font Info:    No file LGRptm.fd. on input line 83.
+
 
 LaTeX Font Warning: Font shape `LGR/ptm/m/n' undefined
 (Font)              using `LGR/cmr/m/n' instead on input line 83.
 
-[5]
-Underfull \vbox (badness 3919) has occurred while \output is active []
-
- [6]
-Underfull \hbox (badness 2142) in paragraph at lines 103--104
-[]\OT1/ptm/m/n/11 This last sec-tion de-tails the ver-i-fi-ca-tion of
+[4] [5] (./lit_review.bbl [6]
+Underfull \hbox (badness 1810) in paragraph at lines 29--32
+[]\OT1/ptm/m/n/10 J. E. Mar-tina and L. C. Paul-son, ``Ver-i-fy-ing
  []
 
-[7] (./lit_review.bbl
-Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [8])
-[9
+Underfull \hbox (badness 1648) in paragraph at lines 78--80
+[]\OT1/ptm/m/n/10 M. Archer, ``Prov-ing cor-rect-ness of the ba-sic
+ []
 
-] (./lit_review.aux)
+
+Underfull \hbox (badness 4595) in paragraph at lines 100--102
+[]\OT1/ptm/m/n/10 R. Mil-ner, \OT1/ptm/m/it/10 Com-mu-ni-ca-tion and Con-cur-re
+ncy\OT1/ptm/m/n/10 .
+ []
+
+) [7] (./lit_review.aux)
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
  ) 
 Here is how much of TeX's memory you used:
- 3796 strings out of 492616
- 60953 string characters out of 6129482
- 122509 words of memory out of 5000000
- 7650 multiletter control sequences out of 15000+600000
- 42762 words of font info for 86 fonts, out of 8000000 for 9000
+ 3773 strings out of 492616
+ 60615 string characters out of 6129482
+ 123498 words of memory out of 5000000
+ 7631 multiletter control sequences out of 15000+600000
+ 41951 words of font info for 83 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  41i,8n,25p,1678b,211s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2019/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/t
-exlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/tex
-live/2019/texmf-dist/fonts/type1/public/cbfonts/grmn1095.pfb></usr/local/texliv
+exlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/tex
+live/2019/texmf-dist/fonts/type1/public/cbfonts/grmn1000.pfb></usr/local/texliv
 e/2019/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2019/tex
 mf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2019/texmf-dist/fo
 nts/type1/urw/times/utmri8a.pfb>
-Output written on lit_review.pdf (10 pages, 90676 bytes).
+Output written on lit_review.pdf (8 pages, 89149 bytes).
 PDF statistics:
- 58 PDF objects out of 1000 (max. 8388607)
- 40 compressed objects within 1 object stream
+ 52 PDF objects out of 1000 (max. 8388607)
+ 36 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

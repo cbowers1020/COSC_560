@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019) (preloaded format=pdflatex 2019.5.8)  3 DEC 2019 16:46
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019) (preloaded format=pdflatex 2019.5.8)  13 DEC 2019 15:13
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1569,360 +1569,208 @@ Overfull \vbox (4.74593pt too high) has occurred while \output is active []
 
 
 ]
-[2] [3] [4]
-Underfull \hbox (badness 10000) in paragraph at lines 153--154
+[2]
+
+LaTeX Warning: Citation `Escobar2018' on page 3 undefined on input line 93.
+
+
+LaTeX Warning: Citation `Thorvaldsen2007' on page 3 undefined on input line 95.
+
+
+
+LaTeX Warning: Citation `Caccamo2006' on page 3 undefined on input line 95.
+
+
+Underfull \vbox (badness 3954) has occurred while \output is active []
+
+ [3]
+[4]
+Underfull \hbox (badness 10000) in paragraph at lines 142--143
 []\T1/ptm/m/n/10 The sender mes-sages \T1/ptm/m/it/10 NORM_DATA\T1/ptm/m/n/10 ,
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 153--154
-\T1/ptm/m/it/10 NORM_CMD(FLUSH)\T1/ptm/m/n/10 , \T1/ptm/m/it/10 NORM_CMD(EOT)\T
-1/ptm/m/n/10 , and
+Underfull \hbox (badness 1874) in paragraph at lines 142--143
+\T1/ptm/m/n/10 and both re-ceiver mes-sages are used in the data
  []
 
 
-Underfull \hbox (badness 3049) in paragraph at lines 168--169
+Underfull \hbox (badness 3240) in paragraph at lines 142--143
+\T1/ptm/m/n/10 trans-mis-sion com-po-nent of NORM, which I will
+ []
+
+
+Underfull \hbox (badness 2653) in paragraph at lines 142--143
+\T1/ptm/m/n/10 be mod-el-ing and an-a-lyz-ing in Real-Time Maude.
+ []
+
+
+Underfull \hbox (badness 2726) in paragraph at lines 142--143
+\T1/ptm/m/n/10 There are three sec-tions in the trans-mis-sion and
+ []
+
+
+Underfull \hbox (badness 2096) in paragraph at lines 142--143
+\T1/ptm/m/n/10 re-pair of data: sender trans-mis-sion (\T1/ptm/m/it/10 NORM_DAT
+A\T1/ptm/m/n/10 ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 142--143
+\T1/ptm/m/n/10 re-ceiver re-pair re-quest (\T1/ptm/m/it/10 NORM_CMD(FLUSH)\T1/p
+tm/m/n/10 ,
+ []
+
+
+Underfull \hbox (badness 3049) in paragraph at lines 160--161
 []\T1/ptm/m/it/10 Receiver NACK Cy-cle Ini-ti-a-tion\T1/ptm/m/n/10 : Nor-mally,
  a
  []
 
 
-Underfull \hbox (badness 3815) in paragraph at lines 168--169
+Underfull \hbox (badness 3815) in paragraph at lines 160--161
 \T1/ptm/m/n/10 NORM re-ceiver will ini-ti-ate the NACK cy-
  []
 
 
-Underfull \hbox (badness 3646) in paragraph at lines 168--169
+Underfull \hbox (badness 3646) in paragraph at lines 160--161
 \T1/ptm/m/n/10 FEC cod-ing block bound-aries, or re-ceipt of
  []
 
 
-Underfull \hbox (badness 4132) in paragraph at lines 170--171
+Underfull \hbox (badness 4132) in paragraph at lines 162--163
 []\T1/ptm/m/it/10 Sender FLUSH Pro-cess\T1/ptm/m/n/10 : The IETF draft of
  []
 
 
-Underfull \hbox (badness 7814) in paragraph at lines 170--171
+Underfull \hbox (badness 7814) in paragraph at lines 162--163
 \T1/ptm/m/n/10 NORM ended the re-quest and re-pair pro-
  []
 
 
-Underfull \hbox (badness 1412) in paragraph at lines 170--171
+Underfull \hbox (badness 1412) in paragraph at lines 162--163
 \T1/ptm/m/n/10 so it is un-clear that if a re-ceiver re-ceives a
  []
 
 [5]
-LaTeX Font Info:    Try loading font information for T1+pcr on input line 173.
+LaTeX Font Info:    Try loading font information for T1+pcr on input line 165.
  (/usr/local/texlive/2019/texmf-dist/tex/latex/psnfss/t1pcr.fd
 File: t1pcr.fd 2001/06/04 font definitions for T1/pcr.
 )
-Underfull \hbox (badness 1596) in paragraph at lines 173--174
+Underfull \hbox (badness 1596) in paragraph at lines 165--166
 \T1/ptm/m/n/10 ap-pli-ca-tion layer mod-ule, \T1/pcr/m/n/10 APPLICATIONS\T1/ptm
 /m/n/10 , de-fines
  []
 
 
-Underfull \hbox (badness 1552) in paragraph at lines 173--174
+Underfull \hbox (badness 1552) in paragraph at lines 165--166
 \T1/ptm/m/n/10 ap-pli-ca-tions to send and re-ceive data. The sender
  []
 
 
-Underfull \hbox (badness 3250) in paragraph at lines 173--174
+Underfull \hbox (badness 3250) in paragraph at lines 165--166
 \T1/ptm/m/n/10 re-ceiver ap-pli-ca-tion col-lects data re-ceived by the
  []
 
 
-Underfull \hbox (badness 3068) in paragraph at lines 173--174
+Underfull \hbox (badness 3068) in paragraph at lines 165--166
 \T1/ptm/m/n/10 re-ceiver node [[]]. The au-thor fur-ther de-fines an
  []
 
 
-Underfull \hbox (badness 3312) in paragraph at lines 173--174
+Underfull \hbox (badness 3312) in paragraph at lines 165--166
 \T1/ptm/m/n/10 that the other mes-sage types will "in-herit" (i.e.,
  []
 
 
-Underfull \hbox (badness 1478) in paragraph at lines 173--174
+Underfull \hbox (badness 1478) in paragraph at lines 165--166
 \T1/ptm/m/n/10 wrap) for the dif-fer-ent types of NORM mes-sages
  []
 
 
-Underfull \hbox (badness 3954) in paragraph at lines 173--174
+Underfull \hbox (badness 3954) in paragraph at lines 165--166
 \T1/ptm/m/n/10 de-fined. The fol-low-ing mes-sages are de-fined for
  []
 
 
-Underfull \hbox (badness 7558) in paragraph at lines 173--174
+Underfull \hbox (badness 7558) in paragraph at lines 165--166
 \T1/ptm/m/n/10 the data trans-mis-sion com-po-nent: NORM_DATA,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 173--174
+Underfull \hbox (badness 10000) in paragraph at lines 165--166
 \T1/ptm/m/n/10 NORM_CMD(FLUSH), NORM_CMD(SQUELCH),
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 173--174
+Underfull \hbox (badness 10000) in paragraph at lines 165--166
 \T1/ptm/m/n/10 and NORM_NACK. My anal-y-sis will add the
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 188--189
+Underfull \hbox (badness 10000) in paragraph at lines 180--181
 []\T1/ptm/m/n/10 NACK cy-cle ini-ti-ated by re-ceipt of
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 201--202
-[]\T1/ptm/m/n/10 A sender node will now con-tinue to send
+[6] (./NORM_Verification.bbl
+Underfull \hbox (badness 10000) in paragraph at lines 43--46
+\T1/ptm/m/n/10 http://maude.cs.illinois.edu/w/index.php/The_Mau-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 201--202
-\T1/ptm/m/n/10 NORM_CMD(FLUSH) com-mands while it is
+Underfull \hbox (badness 1648) in paragraph at lines 89--92
+[]\T1/ptm/m/n/10 M. Archer, ``Prov-ing cor-rect-ness of the ba-sic
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 201--202
-\T1/ptm/m/n/10 par-tic-i-pat-ing in re-spond-ing to re-pair re-quests.
- []
-
-
-Underfull \hbox (badness 5050) in paragraph at lines 203--204
-[]\T1/ptm/m/n/10 To this end, I added the NORM_CMD(EOT)
- []
-
-
-Underfull \hbox (badness 2119) in paragraph at lines 203--204
-\T1/ptm/m/n/10 mes-sage to the Real-Time Maude spec-i-fi-ca-tion of
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 203--204
-\T1/ptm/m/n/10 the data trans-mis-sion com-po-nent[]. The orig-i-nal
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 203--204
-\T1/ptm/m/n/10 NORM_CMD(FLUSH) mes-sage was de-fined as
- []
-
-[6]
-LaTeX Font Info:    Try loading font information for OMS+ptm on input line 205.
-
- (/usr/local/texlive/2019/texmf-dist/tex/latex/psnfss/omsptm.fd
-File: omsptm.fd 
-)
-LaTeX Font Info:    Font shape `OMS/ptm/m/n' in size <8> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 205.
-
-Underfull \hbox (badness 10000) in paragraph at lines 209--210
-[]\T1/ptm/m/n/10 With the ad-di-tion of the NORM_CMD(EOT)
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 209--210
-\T1/ptm/m/n/10 mes-sage, which re-moved the need for the
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 209--210
-\T1/ptm/m/n/10 NORM_FLUSH_FLAG_EOT flag, the up-dated
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 209--210
-\T1/ptm/m/n/10 NORM_CMD(FLUSH) mes-sage is now de-fined
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 223--224
- \T1/ptm/m/it/10 2) Up-date Spec-i-fi-ca-tion - Ex-ist-ing Pro-cess
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 223--224
-\T1/ptm/m/it/10 Rules: [][] \T1/ptm/m/n/10 Orig-i-nally, two rules gov-erned th
-e
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 223--224
-\T1/ptm/m/n/10 re-ceipt of a NORM_CMD(FLUSH) mes-sage:
- []
-
-
-Underfull \hbox (badness 8000) in paragraph at lines 223--224
-\T1/pcr/m/n/10 initiateFlushProcess \T1/ptm/m/n/10 and \T1/pcr/m/n/10 flushProc
-ess\T1/ptm/m/n/10 .
- []
-
-[7]
-Underfull \hbox (badness 10000) in paragraph at lines 312--313
-[]\T1/ptm/m/n/10 By ad-just-ing the def-i-ni-tion of the
- []
-
-
-Underfull \hbox (badness 1881) in paragraph at lines 312--313
-\T1/ptm/m/n/10 and the NACK ac-cu-mu-la-tion pro-cess, while those
- []
-
-
-Underfull \hbox (badness 2744) in paragraph at lines 312--313
-\T1/ptm/m/n/10 for re-ceiv-ing NORM_CMD(EOT) mes-sages and a
- []
-
-
-Underfull \hbox (badness 2351) in paragraph at lines 314--315
-[]\T1/ptm/m/n/10 The changes made to ex-ist-ing rules con-sist of
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 314--315
-\T1/ptm/m/n/10 upon the orig-i-nal end of trans-mis-sion flag
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 314--315
-\T1/ptm/m/n/10 NORM_FLUSH_FLAG_EOT and ad-just-ing for
- []
-
-
-Underfull \hbox (badness 5050) in paragraph at lines 314--315
-\T1/ptm/m/n/10 the new def-i-ni-tion of the NORM_CMD(FLUSH)
- []
-
-
-Underfull \hbox (badness 6559) in paragraph at lines 314--315
-\T1/ptm/m/n/10 mes-sage def-i-ni-tion pre-vi-ously de-fined. The rules
- []
-
-
-Underfull \hbox (badness 7047) in paragraph at lines 314--315
-\T1/ptm/m/n/10 af-fected by re-mov-ing this de-pen-dent logic are:
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 314--315
-\T1/pcr/m/n/10 initiateFlushProcess\T1/ptm/m/n/10 , \T1/pcr/m/n/10 flushProcess
-\T1/ptm/m/n/10 ,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 314--315
-\T1/pcr/m/n/10 NACKcycleInitiatedByFLUSH\T1/ptm/m/n/10 , and
- []
-
-
-Underfull \hbox (badness 5756) in paragraph at lines 314--315
-\T1/pcr/m/n/10 ignoreFLUSH\T1/ptm/m/n/10 . The sender rule \T1/pcr/m/n/10 initi
-ateEot
- []
-
-[8]
-Underfull \hbox (badness 10000) in paragraph at lines 364--365
-[]\T1/ptm/m/n/10 The fi-nal change for the rule
- []
-
-
-Underfull \hbox (badness 1412) in paragraph at lines 364--365
-\T1/pcr/m/n/10 NACKcycleInitiatedByFLUSH\T1/ptm/m/n/10 , oc-curs on lines
- []
-
-[9]
-Underfull \hbox (badness 10000) in paragraph at lines 450--451
-[]\T1/ptm/m/n/10 To sum-ma-rize these rule mod-i-fi-ca-tions and
- []
-
-
-Underfull \hbox (badness 4391) in paragraph at lines 450--451
-\T1/ptm/m/n/10 ad-di-tions, the rules that pre-vi-ously de-pended on
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 450--451
-\T1/ptm/m/n/10 the dep-re-cated, and sub-se-quently re-moved, end
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 450--451
-\T1/ptm/m/n/10 of trans-mis-sion flag NORM_FLUSH_FLAG_EOT
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 450--451
-\T1/ptm/m/n/10 (\T1/pcr/m/n/10 initiateFlushProcess\T1/ptm/m/n/10 , \T1/pcr/m/n
-/10 flushProcess\T1/ptm/m/n/10 ,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 450--451
-\T1/pcr/m/n/10 NACKcycleInitiatedByFLUSH\T1/ptm/m/n/10 , and
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 450--451
-\T1/pcr/m/n/10 ignoreFLUSH\T1/ptm/m/n/10 ) were mod-i-fied and no longer
- []
-
-(./NORM_Verification.bbl
-Underfull \hbox (badness 4595) in paragraph at lines 45--47
+Underfull \hbox (badness 4595) in paragraph at lines 106--108
 []\T1/ptm/m/n/10 R. Mil-ner, \T1/ptm/m/it/10 Com-mu-ni-ca-tion and Con-cur-renc
 y\T1/ptm/m/n/10 .
  []
 
 
-Underfull \hbox (badness 1648) in paragraph at lines 86--89
-[]\T1/ptm/m/n/10 M. Archer, ``Prov-ing cor-rect-ness of the ba-sic
- []
-
-
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [10]
-Underfull \hbox (badness 10000) in paragraph at lines 127--130
-\T1/ptm/m/n/10 http://maude.cs.illinois.edu/w/index.php/The_Mau-
- []
-
-
-Underfull \hbox (badness 2384) in paragraph at lines 144--147
+ [7]
+Underfull \hbox (badness 2384) in paragraph at lines 157--160
 []\T1/ptm/m/n/10 B. Adam-son, C. Bor-mann, M. Han-d-ley, and
  []
 
 
-Underfull \hbox (badness 1412) in paragraph at lines 144--147
+Underfull \hbox (badness 1412) in paragraph at lines 157--160
 \T1/ptm/m/n/10 J. Macker, ``Mul-ti-cast negative-acknowledgment
  []
 
-) [11
+) [8
 
-] (./NORM_Verification.aux) ) 
+] (./NORM_Verification.aux)
+
+LaTeX Warning: There were undefined references.
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+ ) 
 Here is how much of TeX's memory you used:
- 32769 strings out of 492616
- 654247 string characters out of 6129482
- 948426 words of memory out of 5000000
- 36171 multiletter control sequences out of 15000+600000
- 688281 words of font info for 218 fonts, out of 8000000 for 9000
+ 32458 strings out of 492616
+ 651710 string characters out of 6129482
+ 689428 words of memory out of 5000000
+ 35887 multiletter control sequences out of 15000+600000
+ 672048 words of font info for 189 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 63i,8n,101p,1523b,1645s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/local/texlive/2019/texmf-dist/fonts/enc/dvip
-s/base/8r.enc}{/usr/local/texlive/2019/texmf-dist/fonts/enc/dvips/newtx/ntx-ot1
--tlf.enc}</usr/local/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cms
-y8.pfb></usr/local/texlive/2019/texmf-dist/fonts/type1/public/tex-gyre/qtmr.pfb
-></usr/local/texlive/2019/texmf-dist/fonts/type1/public/tex-gyre/qtmri.pfb></us
-r/local/texlive/2019/texmf-dist/fonts/type1/public/newtx/rntxbmi.pfb></usr/loca
-l/texlive/2019/texmf-dist/fonts/type1/public/txfonts/rtxmi.pfb></usr/local/texl
-ive/2019/texmf-dist/fonts/type1/public/txfonts/rtxr.pfb></usr/local/texlive/201
-9/texmf-dist/fonts/type1/public/txfonts/txmia.pfb></usr/local/texlive/2019/texm
-f-dist/fonts/type1/public/newtx/txsys.pfb></usr/local/texlive/2019/texmf-dist/f
-onts/type1/urw/courier/ucrr8a.pfb></usr/local/texlive/2019/texmf-dist/fonts/typ
-e1/urw/times/utmb8a.pfb></usr/local/texlive/2019/texmf-dist/fonts/type1/urw/tim
-es/utmbi8a.pfb></usr/local/texlive/2019/texmf-dist/fonts/type1/urw/times/utmr8a
-.pfb></usr/local/texlive/2019/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on NORM_Verification.pdf (11 pages, 181562 bytes).
+ 63i,8n,101p,1386b,317s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/local/texlive/2019/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/t
+exlive/2019/texmf-dist/fonts/type1/public/newtx/txsys.pfb></usr/local/texlive/2
+019/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/local/texlive/2019/texm
+f-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2019/texmf-dist/fon
+ts/type1/urw/times/utmbi8a.pfb></usr/local/texlive/2019/texmf-dist/fonts/type1/
+urw/times/utmr8a.pfb></usr/local/texlive/2019/texmf-dist/fonts/type1/urw/times/
+utmri8a.pfb>
+Output written on NORM_Verification.pdf (8 pages, 104002 bytes).
 PDF statistics:
- 133 PDF objects out of 1000 (max. 8388607)
- 82 compressed objects within 1 object stream
+ 95 PDF objects out of 1000 (max. 8388607)
+ 54 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  157 words of extra memory for PDF output out of 10000 (max. 10000000)
 

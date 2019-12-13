@@ -1,0 +1,253 @@
+\subsubsection{Update Specification - NORM\_CMD(EOT) Message}
+In the fifteen years since \cite{Lien2004} was completed, NORM has become an Internet standard seeing wide use both in commercial and defense applications. Surprisingly, not much has changed in the draft used by the author and the current Internet standard. One significant difference especially relevant to the data transmission component of NORM, is the modification of the NORM\_CMD(FLUSH) message definition and the addition of the NORM\_CMD(EOT) message to allow for smoother operation of the flushing and repair request processes by receivers in a NORM session instance. As previously noted, originally a flag, NORM\_FLUSH\_FLAG\_EOT, would be turn on within the message NORM\_CMD(FLUSH) informing receivers that the sender was ending transmissions and all final repair requests need to be submitted. This approach, however, created some ambiguity regarding when exactly the sender node would cease transmitting: after it sends the flag enable NORM\_CMD(FLUSH) message or after some timeout to allow for additional repair requests to transit back from receivers? This is, of course, an implementation specific decision, which burdens NORM application developers with ensuring the protocol acts appropriately and does not introduce any safety issues. Historically, though, developer cannot be trusted to account for the potential safety issues different implementations may introduce, so the NORM designers decided to adjust the algorithm for a sender node to end transmission.
+
+A sender node will now continue to send NORM\_CMD(FLUSH) commands while it is participating in responding to repair requests. Once it wishes to cease transmitting, it will send a NORM\_CMD(EOT) message, after which the sender will respond to no more repair requests or transmit any additional data. This approach allows both senders and receivers to end a NORM session gracefully and removes any potential ambiguities or safety issues from arising in implementation specific instances of NORM.
+
+To this end, I added the NORM\_CMD(EOT) message to the Real-Time Maude specification of the data transmission component\footnote{For a full explanation of all variables referenced in the following code snippets, please refer to sections 4.2.3 and 7.3 of \cite{Lien2004}}. The original NORM\_CMD(FLUSH) message was defined as follows:
+\begin{lstlisting}[caption=Original FLUSH Message Definition, label=lst1:mxm,]
+***Usage: FLUSH(dataUnitId, grtt, eotFlag)
+msg FLUSH : DataUnitId Time Bool -> ControlPacket .
+\end{lstlisting}
+
+With the addition of the NORM\_CMD(EOT) message, which removed the need for the NORM\_FLUSH\_FLAG\_EOT flag, the updated NORM\_CMD(FLUSH) message is now defined as:
+\begin{lstlisting}[caption=New FLUSH Message Definition, label=lst2:mxm,]
+***Usage: FLUSH(dataUnitId, grtt)
+msg FLUSH : DataUnitId Time -> ControlPacket .
+\end{lstlisting}
+
+The NORM\_CMD(EOT) message now assumes the functionality of the NORM\_FLUSH\_FLAG\_EOT flag and is defined similarly to the NORM\_CMD(FLUSH) message, but the rules for handling it will be different:
+\begin{lstlisting}[caption=EOT Message Definition, label=lst3:mxm,]
+***Usage: EOT(dataUnitId, grtt)
+msg EOT : DataUnitId Time -> ControlPacket .
+\end{lstlisting}
+
+\bigbreak
+\subsubsection{Update Specification - Existing Process Rules}
+Originally, two rules governed the receipt of a NORM\_CMD(FLUSH) message: \texttt{initiateFlushProcess} and \texttt{flushProcess}. The first rule initiated the flush/repair request process and the second rule defined the continuation of the flush process. They are defined as follows:
+
+\begin{lstlisting}[caption=Rule to Initiate NORM FLUSH Process, label=lst4:mxm,]
+crl [initiateFlushProcess] :
+{< A : SenderApplication | dataBuffer : ML > 
+< S : DTsender |
+children : OS, GRTT : T,
+dataBuffer : objectBlock(ML'), flushBuffer : noObjectBlock,
+FLUSHcounter : 0, FLUSHtimer : INF,  
+NACKaccumTimer : INF, repairTransmission : nil >
+OC:ObjectConfiguration}
+=>
+{< A : SenderApplication | >
+< S : DTsender |
+dataBuffer : noObjectBlock, flushBuffer : objectBlock(ML'),
+FLUSHcounter : 1, FLUSHtimer : 2 * T >
+(multisend FLUSH(lastDataUnitId(objectBlock(ML')), T,
+(if ML == nil then true else false fi)) 
+from S to OS)
+OC:ObjectConfiguration}
+if allSegsTransmitted(ML') .
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Rule defining ongoing NORM FLUSH Process, label=lst5:mxm,]
+crl [flushProcess] :
+{< A : SenderApplication | dataBuffer : ML >
+< S : DTsender |
+children : OS, NormRobustFactor : NZN, GRTT : T,
+dataBuffer : M, flushBuffer : M', 
+FLUSHcounter : N, FLUSHtimer : 0, 
+NACKaccumTimer : INF, repairTransmission : nil >
+OC:ObjectConfiguration}
+=>
+{< A : SenderApplication | >
+< S : DTsender |
+flushBuffer : (if s(N) == NZN then noObjectBlock else M' fi),
+FLUSHcounter : (if s(N) == NZN then 0 else s(N) fi), 
+FLUSHtimer : (if s(N) == NZN then INF else 2 * T fi) >
+(multisend FLUSH(lastDataUnitId(M'), T, 
+(if ML == nil and M == noObjectBlock then true else false fi)) 
+from S to OS)
+OC:ObjectConfiguration}
+if M' =/= noObjectBlock /\ N < NZN .
+\end{lstlisting}
+
+These rules in turn affected the NACK cycle process running on the receiver. This process was defined by the rules \texttt{NACKcycleInitiatedByFLUSH} and \texttt{ignoreFLUSH} (if receiver has received all transmitted segments) defined in the following manner:
+
+\begin{lstlisting}[caption=Rule defining NACK Cycle Initiation by FLUSH Message, label=lst6:mxm,]
+crl [NACKcycleInitiatedByFLUSH] : 
+(outOfLink FLUSH(NZN :: NZN', T, B) from O to R)
+< R : DTreceiver |
+randomSeed : N, NormRobustFactor : NZN'', gsize : NZN''', 
+receiveBuffer : ML, nextExpectedDUI : DUI,
+repairNeeds : DUIL, repairRequests : DUIL', 
+NACKbackoffTimer : TI, NACKcycleHoldoffTimer : TI',
+sendersCurrTransPos : DUI' >
+=>
+(if (keepValidNACKcontent(DUIL, NZN :: NZN') =/= nil
+or recordRepairNeeds(s(NZN) :: 1, DUI, 
+recBuffUpToDUI(ML, s(NZN) :: 1)) =/= nil) 
+and TI == INF and (TI' == INF or TI' == 0)
+then
+< R : DTreceiver | 
+GRTT : T, randomSeed : random(N),
+repairNeeds : addDUIlist(recordRepairNeeds(s(NZN) :: 1, DUI, 
+recBuffUpToDUI(ML, s(NZN) :: 1)),
+DUIL),
+repairRequests : addDUIlist(recordRepairNeeds(s(NZN) :: 1, DUI, 
+recBuffUpToDUI(ML, s(NZN) :: 1)),
+keepValidNACKcontent(DUIL, NZN :: NZN')),
+NACKbackoffTimer : randomBackoff(random(N), NZN'', T, NZN'''),
+sendersCurrTransPos : (if B then 0 :: 0 else DUI' fi) >
+else 
+< R : DTreceiver |
+GRTT : T, 
+nextExpectedDUI : 
+(if B == true and DUI == s(NZN) :: 1 then 0 :: 0 else DUI fi) > fi)  
+if largerThan(s(NZN) :: 1, DUI) /\ DUI =/= 0 :: 0 . 
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Rule defining ignoring of FLUSH MESSAGE, label=lst7:mxm,]
+crl [ignoreFLUSH] :
+(outOfLink FLUSH(DUI, T, B) from O to R)
+< R : DTreceiver | nextExpectedDUI : DUI' >
+=>
+< R : DTreceiver | GRTT : T >
+if smallerThan(DUI, DUI') or DUI' == 0 :: 0 .
+\end{lstlisting}
+
+By adjusting the definition of the NORM\_CMD(FLUSH) message and the rules defining its transmittal, the rules originally defined in \cite{Lien2004} must be modified. Previously, the rule defining the behavior of NORM\_CMD(FLUSH) determined when transmission ended, the initiation of the NACK cycle, and how receivers replied with remaining repair requests. Adding in the NORM\_CMD(EOT) message changes the nature of those process. The ending of transmission will now be determined by the NORM\_CMD(EOT) message and this message itself will end both the flush process and the NACK accumulation process, while those processes remain to themselves entirely and the end-of-transmission in effect becomes its own process. This was a smart design decision to make in updating the NORM standard as it further modularizes the processes within a NORM session, making it (hopefully) more resilient and robust. In light of these changes, the previously defined rules will be modified to account for receiving NORM\_CMD(EOT) messages and a rule to handle the transmission from the sender of NORM\_CMD(EOT) messages will be defined.
+
+The changes made to existing rules consist of removing the logic in the rules that is dependent upon the original end of transmission flag NORM\_FLUSH\_FLAG\_EOT and adjusting for the new definition of the NORM\_CMD(FLUSH) message definition previously defined. The rules affected by removing this dependent logic are: \texttt{initiateFlushProcess}, \texttt{flushProcess}, \texttt{NACKcycleInitiatedByFLUSH}, and \texttt{ignoreFLUSH}. The sender rule \texttt{initiateEot} and receiver rule \texttt{NACKcycleKilledByEOT} will also be created. I will highlight the changes on a per rule basis.
+
+For the rule \texttt{initiateFlushProcess} defined in listing 4, 14 was originally defined as follows: 
+\begin{lstlisting}
+(multisend FLUSH(lastDataUnitId(objectBlock(ML')), T,
+(if ML == nil then true else false fi)) 
+from S to OS)
+\end{lstlisting}
+
+After updating the NORM\_CMD(FLUSH) message definition by removing the end of transmission flag and removing the dependent flag logic from the FLUSH process entirely:
+\begin{lstlisting}
+(multisend FLUSH(lastDataUnitId(objectBlock(ML')), T) from S to OS)
+\end{lstlisting}
+
+Similarly, the rule \texttt{flushProcess} defined in listing 5 relied on the end of transmission flag. Lines 15-17 of listing 5 originally read:
+\begin{lstlisting}
+(multisend FLUSH(lastDataUnitId(M'), T, 
+(if ML == nil and M == noObjectBlock then true else false fi)) 
+from S to OS)
+\end{lstlisting}
+\noindent
+After updating, the multisend command now reads:
+\begin{lstlisting}
+(multisend FLUSH(lastDataUnitId(M'), T) 
+     from S to OS)
+\end{lstlisting}
+
+These edits to these rules maintains original FLUSH process functionality, but removes the end of transmission logic. Before defining a rule to begin that process, the rules \texttt{NACKcycleInitiatedByFLUSH} and \texttt{ignoreFLUSH} must first be modified.
+
+For \texttt{NACKcycleInitiatedByFLUSH} defined in listing 6, line 2 must change to account for the new message definition for the NORM\_CMD(FLUSH) message:
+\begin{lstlisting}
+(outOfLink FLUSH(NZN :: NZN', T, B) from O to R)
+\end{lstlisting}
+\noindent
+With the updated FLUSH message definition removing the B boolean variable
+\begin{lstlisting}
+(outOfLink FLUSH(NZN ::NZN', T) from O to R)
+\end{lstlisting}
+
+\bigbreak
+Additionally, line 24 from listing 6:
+\begin{lstlisting}
+sendersCurrTransPos : (if B then 0 :: 0 else DUI' fi) >
+\end{lstlisting}
+\noindent
+becomes
+\begin{lstlisting}
+sendersCurrTransPos : DUI'' >
+\end{lstlisting}
+
+The final change for the rule \texttt{NACKcycleInitiatedByFLUSH}, occurs on lines 28 and 29:
+\begin{lstlisting}
+nextExpectedDUI : 
+(if B == true and DUI == s(NZN) :: 1 then 0 :: 0 else DUI fi) > fi)  
+\end{lstlisting}
+now becomes
+\begin{lstlisting}
+nextExpectedDUI : 
+(if DUI == s(NZN) :: 1 then 0 :: 0 else DUI fi) > fi)  
+\end{lstlisting}
+
+Finally, the last rule affected by the change in the FLUSH message definition is \texttt{ignoreFLUSH}, in which only how it reads the FLUSH message (line 2 in listing 7) from the link must be changed (i.e., remove the boolean variable B representing the end of transmission flag):
+\begin{lstlisting}
+(outOfLink FLUSH(DUI, T, B) from O to R)
+\end{lstlisting}
+\noindent
+now simply reads
+\begin{lstlisting}
+(outOfLink FLUSH(DUI, T) from O to R)
+\end{lstlisting}
+
+After modifying all of these process rules by removing the end of transmission flag dependencies, a process rules must be defined so a sender can transmit a NORM\_CMD(EOT) message and a receiver node has a process rule on how to handle the receipt of such a message.
+
+\subsubsection{Update Specification - NORM\_CMD(EOT) Process Rules}
+In order for the functionality of the updated NORM standard to be modeled in the Real-Time Maude specification, rules for a sender node to transmit a NORM\_CMD(EOT) message and a receiver node to act on the receipt of a NORM\_CMD(EOT) message must be created.
+
+For the sender node, this transmit rule is modeled similarly to the transmission of a FLUSH message, listing 2. The rule acts on a NORM object and will only transmit the NORM\_CMD(EOT) message after all enqueued data is transmitted and the sender wishes to terminate the transmission session. With this in mind, the following code defines the sender rule \texttt{initiateEOT}:
+\bigbreak
+\begin{lstlisting}[caption=Rule defining Sender initiating EOT, label=lst8:mxm,]
+crl [initiateEot] :
+{< A : SenderApplication | dataBuffer : ML >
+< S : DTsender |
+children : OS, NormRobustFactor : NZN, GRTT : T,
+dataBuffer : M, flushBuffer : M',
+FLUSHcounter : N, FLUSHtimer : 0,
+NACKaccumTimer : INF, repairTransmission : nil >
+OC:ObjectConfiguration}
+=>
+{< A : SenderApplication | >
+< S : DTsender |
+flushBuffer : (if s(N) == NZN then noObjectBlock else M' fi),
+FLUSHcounter : (if s(N) == NZN then 0 else s(N) fi), 
+FLUSHtimer : (if s(N) == NZN then INF else 2 * T fi) >
+(multisend EOT(lastDataUnitId(M'), T) from S to OS)
+OC:ObjectConfiguration}
+if M' =/= noObjectBlock /\ N < NZN .
+\end{lstlisting}
+
+The main function of this rule is simply to define the functionality to transmit a NORM\_CMD(EOT) message for a sender node, which occurs on line 15 with the \texttt{multisend} command. In Real-Time Maude a rule must be defined for objects, variables, and communication in order for the system functionality to exist within in the Real-Time Maude specification. In short, rules define functionality.
+
+The last rule regarding the NORM\_CMD(EOT) message defines the capability of a receiver to interpret the NORM\_CMD(EOT) message after reading it from the link. This rule models a similar structure to the rule \texttt{NACKcycleInitiatedByFLUSH} in listing 6 and is labeled \texttt{NACKcycleKilledByEOT}:
+\begin{lstlisting}[caption=Rule defining Receiver Killing EOT, label=lst9:mxm,]
+crl [NACKcycleKilledByEOT] :
+(outOfLink EOT(NZN :: NZN', T) from O to R)
+< R : DTreceiver |
+randomSeed : N, NormRobustFactor : NZN'', gsize : NZN''', 
+receiveBuffer : ML, nextExpectedDUI : DUI,
+repairNeeds : DUIL, repairRequests : DUIL', 
+NACKbackoffTimer : TI, NACKcycleHoldoffTimer : TI',
+sendersCurrTransPos : DUI' >
+=>
+(if (keepValidNACKcontent(DUIL, NZN :: NZN') =/= nil
+or recordRepairNeeds(s(NZN) :: 1, DUI, 
+recBuffUpToDUI(ML, s(NZN) :: 1)) =/= nil) 
+and TI == INF and (TI' == INF or TI' == 0)
+then
+< R : DTreceiver | 
+GRTT : T, randomSeed : random(N),
+repairNeeds : addDUIlist(recordRepairNeeds(s(NZN) :: 1, DUI, 
+recBuffUpToDUI(ML, s(NZN) :: 1)),
+DUIL),
+repairRequests : addDUIlist(recordRepairNeeds(s(NZN) :: 1, DUI, 
+recBuffUpToDUI(ML, s(NZN) :: 1)),
+keepValidNACKcontent(DUIL, NZN :: NZN')),
+NACKbackoffTimer : randomBackoff(random(N), NZN'', T, NZN'''),
+sendersCurrTransPos : 0 :: 0 >
+else 
+< R : DTreceiver |
+GRTT : T, 
+nextExpectedDUI : 
+(if DUI == s(NZN) :: 1 then 0 :: 0 else DUI fi) > fi)  
+if largerThan(s(NZN) :: 1, DUI) /\ DUI =/= 0 :: 0 .
+\end{lstlisting}
+
+This rule receives the NORM\_CMD(EOT) message (line 2) and either resets the sender's current transmission position to 0 (line 24) or  either resets the receivers data unit ID (Real-Time Maude specification variable) if no packets require repair or leaves the data unit ID as is, which leaves unrepaired packets as is.
+
+To summarize these rule modifications and additions, the rules that previously depended on the deprecated, and subsequently removed, end of transmission flag NORM\_FLUSH\_FLAG\_EOT (\texttt{initiateFlushProcess}, \texttt{flushProcess}, \texttt{NACKcycleInitiatedByFLUSH}, and \texttt{ignoreFLUSH}) were modified and no longer require knowledge of sender intent to end transmission and quit the instantiated NORM session. The sender rule \texttt{initiateEOT} was created to enable a sender node the ability to inform receivers of its intent to end transmission and the creation of the receiver rule \texttt{NACKcycleKilledByEOT} provides receiver nodes the knowledge of a NORM\_CMD(EOT) transmission and to gracefully exit a NORM session. With these rules defined, analysis of properties and safety conditions can be performed on the updated NORM data transmission component Real-Time Maude specification.

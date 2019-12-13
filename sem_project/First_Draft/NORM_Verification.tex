@@ -33,7 +33,7 @@
 }
 \makeatother
 
-\title{NORM Multicast Protocol Verification}
+\title{Multicast Protocol Verification: Using Real-Time Maude to Verify the NACK Oriented Reliable Multicast Protocol}
 \author{Caleb Bowers}
 \date{11-26-2019}
 
@@ -45,28 +45,23 @@ This is placeholder text
 \end{abstract}
 
 \section{Introduction}
-The past thirty years has seen significant improvement in how formal methods researchers approach verifying computer networking protocols. Traditionally, during development and implementation, the protocol would undergo extensive testing as the primary method of verifying that the performance of the protocol matched the design specification and the expected functionality. If the protocol behavior mirrored that of the design specification, then researchers and designers felt confident enough to label the protocol ``verified,'' or at least stable enough for reliable use. This approach does not concretely verify the protocol, but does prevent obvious errors from existing and can come close to ensuring functionality in expected operational conditions. Extensive testing, however, only verifies the behavior of the specification for the specific domain tested, and does not logically verify the specification itself.
+In the past thirty years researchers have produced significant improvements in how formal methods are used to verify computer networking protocols. Traditionally, during development and implementation, the protocol would undergo extensive testing as the primary method of verifying that the function of the protocol matched the design specification. If the protocol behavior mirrored that of the design specification, then researchers and designers felt confident enough to label the protocol ``verified,'' or at least stable enough for reliable use. This approach does not concretely verify the protocol, but does prevent obvious errors from existing and can come close to ensuring functionality in expected operational conditions. Extensive testing, however, only verifies the behavior of the specification for the specific domain tested, and does not logically verify the specification itself.
 
 Extensive testing methods work fairly well for day to day unicast Internet protocols where the operating conditions are more predictable and the implementation less complex. There exists a gap, however, for multicast and broadcast networking protocols (hereafter, multicast\footnote{It should be noted that multicast is a subset of broadcast. Broadcast entails a sender transmitting to all network participants, whereas multicast describes a sender transmitting to a \textit{subgroup} of participants.}) and researchers have sought to develop more rigorous formal methods for these networking protocols. 
 
-In multicast environments the participants are often widely distributed and senders only know the group address, rather than the address of each participant (as is the case in unicast). The multicast communications paradigm requires more complex reliability and transmission mechanisms in order to ensure that the protocol maintains efficiency. Implementing these mechanisms leads to an explosion of state space, which further limits the efficacy of extensive testing, since that is often domain specific and is limited in time by the number of actual testable domains. Additionally, as previously mentioned, a specification may produce proper behavior amidst most operational conditions, but still not be logically sound, so a possibility for error exists somewhere in the behavioral domain for that protocol. Formally verifying these complex multicast mechanisms, therefore, remains necessary and is increasingly important as more communication becomes distributed and asynchronous across multicast protocols.
+In multicast environments the participants are often widely distributed and senders only know the group address, rather than the address of each participant (as is the case in unicast). The multicast communications paradigm requires more complex reliability and transmission mechanisms in order to ensure that the protocol maintains efficient use of network resources (e.g, bandwidth). Implementing these mechanisms leads to an explosion of state space, which further limits the efficacy of extensive testing, since that is often domain specific and is limited in time by the number of actual testable domains. Additionally, as previously mentioned, a specification may produce proper behavior amidst most operational conditions, but still not be functionally guaranteed to match the design specification, so a possibility for error exists somewhere in the behavioral domain for that protocol. Formally verifying these complex multicast mechanisms, therefore, remains necessary and is increasingly important as more communication becomes distributed and asynchronous across multicast protocols.
 
-The focus of this paper is to replicate and build off of previous work in \cite{Lien2004}, which sought to verify an early draft version of the NACK Oriented Reliable Multicast Protocol (NORM) \cite{rfc5740}. NORM is a fairly complex multicast protocol for a variety of reasons, namely its use of Forward Error Correction (FEC) codes, its internal timing methods, and its NACK (negative acknowledgement) based reliability guarantees. Due to this complexity, the author of \cite{Lien2004} focused only on two of the more approachable, yet still certainly complex, components of the protocol: its local and global round trip time calculation and its data repair transmission algorithms. For the purpose of this project, I only focus on replicating and updating the verification of the data repair transmission component of the current NORM protocol specification.
+The focus of this paper is to replicate and build off of previous verification efforts that sought to formalize an early draft version of the NACK Oriented Reliable Multicast Protocol (NORM) using the verification framework Real-Time Maude \cite{Lien2004, rfc5740, rtmaudeUrl, maudeUrl}. NORM provides reliable multicast communication amidst even significantly degraded network resources and leverages novel information theoretic methods to recover message information at the bit level, making it the state-of-the-art in reliable multicast communication. In order to provide these delivery guarantees, NORM's design is fairly complex due to its use of Forward Error Correction (FEC) codes, its internal timing methods, and its NACK (negative acknowledgement) based reliability guarantees. Its reliability guarantees make it a desirable protocol to use for multicast applications, but its complexity could make it susceptible to failure, since the state of operation can become easily obfuscated by the large functional state domain, especially as the network increases in size. The initial work focused on specifying and verifying only two of the more approachable, yet still certainly complex, components of the protocol: the local and global round trip time calculation and the data repair transmission algorithms. 
+
+The goals of this paper focus on replicating and expanding the verification of the data repair transmission component of the NORM protocol specification to provide a more comprehensive understanding of the Real-Time Maude NORM model. I achieve this by expanding the original testing scenarios and creating a testing generation framework to provide improved systematic testing enabling a better understanding of the computational and time requirements needed by the Real-Time Maude implementation in order to verify/produce a result. The resulting work produces an analysis and regression testing framework that enables improvements to the Real-Time Maude NORM model to be made or allow a user to formalize a custom implementation of NORM and then compare results to the original Real-Time specification or more rigorously analyze their new specification beyond small sample initial state spaces for error and model timing analysis. 
 
 \section{Related Work}
-Multicast protocols enable a sender to communicate with a group of receivers simultaneously, and as such, require a higher level of complexity when attempting to provide reliability and security guarantees. While multicast protocols in design may be more complex than unicast communication paradigms, the approaches to their verification do not differ that significantly and a body of literature exists for general protocol verification dating back to the late 1970's \cite{Bochman1980}. What follows is a brief overview of some of the significant literature regarding the verification of both multicast protocols and communication networking protocols in general.
-
-\subsection{Early Protocol Verification}
-In \cite{Bochman1980}, an early investigation is performed into the use of formal methods within the design phase of communication protocol development. The 1980's saw a proliferation of complex protocols across increasingly large and distributed networks. These protocols were often designed using extensive testing and narrative description (i.e., implementation use-cases), but design was rarely approached from a logical framework. 
-
-The authors' main contribution to verifying communication protocols was defining the necessary parts of a protocol that constitute a valid formal specification of the protocol in interest: service specification and protocol specification. A service specification is generally based on a set of service primitives and some examples include: \textit{Connect, Disconnect, Send,} and \textit{Receive}. A protocol specification ``must describe the operation of each entity within a layer in response to commands from its users, messages from the other entities \ldots\ and internally initiated actions (e.g., timeouts)'' (here an entity is a process or module local to each protocol implementation) \cite{Bochman1980}. The description of the operations of each entity within the protocol layer define the actual protocol when interacting across entities; therefore, early formal methods being developed for protocol verification focused primarily on the protocol \textit{design} specifications (rather than \textit{implementation} specific verification (i.e., code)), since this is concerned with the actual communication. 
-
-Additionally, \cite{Holzmann1990}, \cite{Milner1989}, and \cite{Baptista1990} provide further examples of early examinations of applying formal methods to network communication protocols.
+Multicast protocols enable a sender to communicate with a group of receivers simultaneously, and as such, require a higher level of complexity when attempting to provide reliability and security guarantees. While multicast protocols in design may be more complex than unicast communication paradigms, the approaches to their verification do not differ that significantly and a body of literature exists for general protocol verification dating back to the late 1970's \cite{Bochman1980}. A brief overview of some of the significant literature regarding the verification of both multicast protocols is provided before delving into background material.
 
 \subsection{Multicast Protocol Verification}
 As previously mentioned, multicast protocols can be significantly more complex than unicast protocols, since the communication originating from a sender can be destined for an arbitrary number of nodes at send time (as opposed to the lifetime of the packet in a unicast protocol). This complexity not only affects how to verify the underlying design of the communications protocol, but how to ensure certain desirable aspects of a communications protocol: security, wireless resilience, etc.
 
-\subsubsection{Early Attempts to Verify}
+\subsubsection{Historical Multicast Verification}
 Early examples of network protocol verification previously mentioned focused primarily on link level properties between fixed entities (e.g, sender and receiver) leveraging a fixed number of lower layer services and components. This approach does not enable the verification of protocols as they are used in the real world where communications happen between an exponential number of entities across complex protocols that make use of an arbitrary number of lower layer services, unicast or multicast. To account for the arbitrary nature of real protocol operational requirements, the researchers shifted from a strict model checking approach, to a technique that uses induction to prove correctness of protocol specifications and properties \cite{Creese1999}, \cite{Callahan1995} ,and \cite{Baptista1990}.
 
 \subsubsection{Current State of Multicast Verification}
@@ -74,17 +69,17 @@ Multicast protocols have seen increased use over the past decade as the prolifer
 
 Prior to focusing on multicast protocol use in wireless settings, researchers turned to verifying additional security primitives for multicast network communication. The focus turned to verifying a system with an arbitrary number of components (as exemplified by streaming digital signature protocols) as a composition of security verified subprocesses carefully constructed to preserve the security properties of the entire system. This technique sufficiently proves that if each single process in a system satisfies a given single property, the composition of two or more \textit{processes} satisfies the compositions of two or more \textit{properties}. Examples using this composition method to demonstrate security satisfiability in multicast protocols are \cite{Gorrieri2008}, \cite{Martina2015}, \cite{Bella2002}, and \cite{Archer2002}.
 
-The emphasis within the field of multicast protocol verification quickly shifted to wireless settings as technological improvements enabled mass communication across the medium. Of particular interest is the functionality of wireless multicast protocols in sparse and poorly resourced networks, generally called edge networks. The authors in \cite{Borujerdi2004} provide an example of verifying a multicast protocol designed to operate within this networking context, MobiCast \cite{Tan2000}. To verify this protocols, the authors develop a model of its functionality within the Prolog language and test this model for a variety of specification properties (i.e., the protocol operates in the way the design specifies) and safety properties (i.e., the protocol operates when it needs to). 
+The emphasis within the field of multicast protocol verification quickly shifted to wireless settings as technological improvements enabled mass communication across the medium. Of particular interest is the functionality of wireless multicast protocols in sparse and poorly resourced networks, generally called edge networks. Analysis of the MobiCast protocol provides an example of verifying a multicast protocol designed to operate within this sparse networking context \cite{Tan2000}. To verify this protocol, the authors develop a model of its functionality within the Prolog language and test this model for a variety of specification properties (i.e., the protocol operates in the way the design specifies) and safety properties (i.e., the protocol operates when it needs to). 
 
-Additional papers that cover wireless multicast vary in scope and focus, but a general lack of literature exists. Most wireless multicast research is focused on the development of new and efficient multicast protocols, leaving the verification until later. One additional example is \cite{Anastasi2000}, which examines the verification of a multicast protocol used to coordinate distributed mobile computing processes. The authors use the Calculus of Communicating Systems \cite{Milner1989} and the Concurrency Workbench tool \cite{Cleaveland1996} to specify and verify their mobile computing multicast protocol. 
+Most wireless multicast research is focused on the development of new and efficient multicast protocols, leaving the verification until later. One additional example is \cite{Anastasi2000}, which examines the verification of a multicast protocol used to coordinate distributed mobile computing processes. The authors use the Calculus of Communicating Systems \cite{Milner1989} and the Concurrency Workbench tool \cite{Cleaveland1996} to specify and verify their mobile computing multicast protocol. Prior to the work being replicated in this paper, NORM had not been formally specified or analyzed, but sees wide use both in wireless contexts and in secure communication environments, so formal analysis of NORM's functional correctness would benefit a large group of users and networking contexts. I wish to expand and improve a framework for testing the Real-Time Maude specification, which will enable
 
 \section{Background}
 
 \subsection{Real-Time Maude}
 
-For communication protocols time is inherently useful in constructing a communication paradigm and ensuring appropriate steps are taking in exchanging information. Since communicating nodes have no means of knowing whether a message will eventually arrive at its intended recipient, time plays a crucial role in helping nodes determine how to react to the receipt, or lack thereof, of a message/information when participating in a communication session. For example, if a node expects a reply to a previously sent message, it may set a timer to determine how long to wait for that reply before re-sending the message or moving ahead in a communication sequence \cite{Lien2004}.
+For communication protocols, time is inherently useful in constructing a communication paradigm and ensuring appropriate steps are taking in exchanging information. Since communicating nodes have no means of knowing whether a message will eventually arrive at its intended recipient, time plays a crucial role in helping nodes determine how to react to the receipt, or lack thereof, of a message/information when participating in a communication session. For example, if a node expects a reply to a previously sent message, it may set a timer to determine how long to wait for that reply before re-sending the message or moving ahead in a communication sequence \cite{Lien2004}.
 
-Within the realm of computing there exists a subset of computing systems whose functionality depends on the passing of time in a real-world setting. These systems are referred to as \textit{real-time} systems as their execution is tightly coupled to the passage of ``real'' time. Within this context, protocols constitute such a system, and NORM in particular heavily leverages and depends on the passage of time for proper functionality. In order to approach the verification of such a protocol, a modeling tool requires additional mechanisms to address the timing constraints a real-time system experiences. The author in \cite{Lien2004} made us of the real-time specification language and analysis tool \textit{Real-Time Maude} \cite{rtmaudeUrl, Olvezky2004}. Real-Time Maude extends the foundational specification language \textit{Maude} \cite{maudeUrl, Clavel2002} based on a logic for modeling concurrent exchanges and evolution in distributed systems called re-write logic \cite{Meseguer1992}. Real-Time Maude enables the user to specify exactly how the change in a concurrent system depends on time. What follows is a high -level view of the theory behind Real-Time Maude, since for the purposes of this project and paper, knowing that Real-Time Maude can be used to specify, analyze, and verify real-time systems, such as NORM, suffices.
+Within the realm of computing there exists a subset of computing systems whose functionality depends on the passing of time in a real-world setting. These systems are referred to as \textit{real-time} systems as their execution is tightly coupled to the passage of ``real'' time. Within this context, protocols constitute such a system, and NORM in particular heavily leverages and depends on the passage of time for proper functionality. In order to approach the verification of such a protocol, a modeling tool requires additional mechanisms to address the timing constraints a real-time system experiences. The author in \cite{Lien2004} made use of the real-time specification language and analysis tool \textit{Real-Time Maude} \cite{rtmaudeUrl, Olvezky2004}. Real-Time Maude extends the foundational specification language \textit{Maude} \cite{maudeUrl, Clavel2002} based on a logic for modeling concurrent exchanges and evolution in distributed systems called re-write logic \cite{Meseguer1992}. Real-Time Maude enables the user to specify exactly how the change in a concurrent system depends on time. What follows is a high -level view of the theory behind Real-Time Maude, since for the purposes of this project and paper, knowing that Real-Time Maude can be used to specify, analyze, and verify real-time systems, such as NORM, suffices.
 
 Real-Time Maude allows the user to analyze a specification of their system in the Maude language by:
 \begin{itemize}
@@ -93,20 +88,15 @@ Real-Time Maude allows the user to analyze a specification of their system in th
 	\item \textit{Model Checking}: Using \textit{Linear Temporal Logic Formulas} Real-Time Maude verifies that from some given initial state the system satisfies the formula for all states or up to some time bounded set of states.
 \end{itemize}
 
-\subsubsection{Rewriting Logic}
-Rewriting logic \cite{Meseguer1992} is particularly well-suited for specifying and analyzing concurrent and distributed systems. A specification in rewrite logic (or a \textit{rewrite theory}) is a tuple $\mathcal{R} = (\Omega, \mathit{E}, \mathit{L}, \mathit{R}$. Where $\Omega$ is an equational signature and $\mathit{E}$ represents a set of equations and membership axioms \cite{Lien2004}. $\mathit{L}$ is a set of labels and $\mathit{R}$ is a set of conditional and unconditional rewrite rules in form:
-\begin{itemize}
-	\item Unconditional: $\mathit{l} : \mathit{t} \rightarrow \mathit{t'}$
-	\item Conditional: $\mathit{l} : \mathit{t} \rightarrow \mathit{t'} \: \boldsymbol{if} \: \mathit{cond}$
-\end{itemize}
+\subsubsection{Examples of Maude and Real-Time Maude}
 
-Where $\mathit{l} \in \mathit{L}$, $\mathit{t}$ and $\mathit{t'}$ are terms in a set of well formed terms in the signature $\Omega$ and \textit{cond} is a conjunction of rewrite conditions.
+Maude has been used recently to verify the YubiKey authentication framework, which is a type of two factor authentication used to verify user identity for network-based services such as remote login or file server access \cite{Escobar2018}. Additionally, Maude has a variety of application domains and has been used to verify programming languages (e.g., Java), analyze biological processes and entity interactions, and develop efficient and generally fault-free business production processes (operations management). 
 
-Rewrite logic employs deduction steps in order to determine if given a rewrite theory, this theory satisfies some condition in time \textit{t} for the following deductive rules: Reflexivity, Equality, Transitivity, Congruence, and Replacement. Please consult \cite{Lien2004} Section 2.1.1 for a formal definition of these deductive rules. 
+Real-Time Maude has not seen as wide spread use as its parent program, but has been applied in a variety of fields, though primarily in the realm of communication protocols (making it well-suited to tackle NORM). Researchers have leveraged Real-Time Maude to specify and formally analyze the \textit{optimal geographical density control} algorithm used to coordinate nodes in a wireless sensor networks and the real-time updating, cost-aware scheduling algorithm CASH  \cite{Thorvaldsen2007, Caccamo2006}.
 
 \subsubsection{Using and Analyzing Real-Time Maude}
 
-Maude leverages rewrite logic to create specifications for systems in order to perform formal analysis and verification the state behaviors of those system. Likewise, Real-Time Maude further extends the theory or rewrite logic to encompass time dependent systems and executions by including syntax to specify the time constraints on a Maude command. A simulation of a specific behavior of a system can now be bounded for set time or can be simulated with out a time constraint, allowing Maude to find unsafe states/behaviors. Similarly, Real-Time Maude enables time specifications for state space search methods and for evaluating linear temporal logic formulas. This enables users to evaluate time itself as a possible failure cause for system behaviors, which, as is the case for NORM, directly impacts functionality of a real-time system.
+Maude leverages rewrite logic (a set of conditional and unconditional logical deduction rules) to create specifications for systems in order to perform formal analysis and verification the state behaviors of those system \cite{Meseguer1992}. Likewise, Real-Time Maude further extends the theory of rewrite logic to encompass time dependent systems and executions by including syntax to specify the time constraints on a Maude command. A simulation of a specific behavior of a system can now be bounded for set time or can be simulated without a time constraint, allowing Maude to find unsafe states/behaviors. Similarly, Real-Time Maude enables time specifications for state space search methods and for evaluating linear temporal logic formulas. This enables users to evaluate time itself as a possible failure cause for system behaviors, which directly impacts functionality of a real-time system (such is the case for NORM).
 
 \subsection{NORM}
 In computer networking communication and protocol verification, communication is broken into three main paradigms
@@ -123,7 +113,7 @@ Multicast is, at this point, incredibly popular for a variety of Internet level 
 NORM can prevent errors due to congestion control by adjusting sender transmission rate in an adaptive manner and using reduced receiver feedback messages, thus preventing the network from being taxed by unnecessary control messages. In order to detect errors, NORM sequences each packet and the receiver can inform the sender of a successful receipt of data or a need to repair received data. Finally, NORM employs novel FEC encoding to correct errors at the receiving end of the packet, but if this is not enabled, the sender can retransmit lost or damaged packets.
 
 \subsubsection{NORM Overview}
-The development of NORM began as an Internet Engineering Task Force (IETF) Internet-Draft and has evolved into a full-fledged Internet Standard in the Request For Comments 5740 \cite{rfc5740} in 2009. In \cite{Lien2004}, whose work I am replicating and seeking to update, the author used an early draft of NORM that became obsolete in 2003, so room exists to update her work and examine how her Real-Time Maude specification reflects the current Internet Standard specification of NORM. The goal of NORM is to provide reliable, efficient, scalable, and robust transport of large amounts of data over an IP multicast network. To this end, NORM employs:
+The development of NORM began as an Internet Engineering Task Force (IETF) Internet-Draft and has evolved into a full-fledged Internet Standard in the Request For Comments 5740 \cite{rfc5740} in 2009. In \cite{Lien2004}, whose work I am replicating and seeking to expand, the author used an early draft of NORM that became obsolete in 2003, so room exists to update her work and examine how her Real-Time Maude specification reflects the current Internet Standard specification of NORM. The goal of NORM is to provide reliable, efficient, scalable, and robust transport of large amounts of data over an IP multicast network. To this end, NORM employs:
 \begin{itemize}
 	\item \textit{NACK based packet repair}: Receivers request repair of packets via a negative-acknowledgement (NACK) when they encounter packet loss
 	\item \textit{Reduced receiver feedback}: Receivers are not required to acknowledge receipt of every packet
@@ -139,7 +129,6 @@ The main subject interest and analysis will be the data transmission component o
 	\begin{itemize}
 		\item \textit{NORM\_CMD(CC)}: used to monitor network congestion and establish round trip times for receiver group(s)
 		\item \textit{NORM\_CMD(FLUSH)}: Once the sender transmits this message, the receivers know that it is preparing to flush (delete) queued data and repair segments, which means receivers must submit any remaining repair requests if they wish to recover lost data
-		\item \textit{NORM\_CMD(EOT)}: This message informs receivers that the sender has completely ended transmission, so receivers can terminate session with sender gracefully\footnote{This message type did not exist in the specification used by \cite{Lien2004} and integrating it will be explained in later sections}
 		\item \textit{NORM\_CMD(SQUELCH)}: Senders transmit this message to all receivers if the sender has received a repair request for data it can no longer repair. This message provides information about which data objects are still eligible for repair
 	\end{itemize}
 \end{itemize}
@@ -150,25 +139,28 @@ The main subject interest and analysis will be the data transmission component o
 	\item \textit{NORM\_ACK}: Used to acknowledge NORM\_CMD messages from sender
 \end{itemize}
 
-The sender messages \textit{NORM\_DATA}, \textit{NORM\_CMD(FLUSH)}, \textit{NORM\_CMD(EOT)}, and \textit{NORM\_CMD(SQUELCH)}; and both receiver messages are used in the data transmission component of NORM, which I will be modeling and analyzing in Real-Time Maude. There are three sections in the transmission and repair of data: sender transmission, receiver repair request, and sender NACK processing/repairing. These are described in detail in section 3.2.4 of \cite{Lien2004} and for my purposes, their order suffices for the level of detail needed to understand the process cycle in NORM for repairing transmitted data.
+The sender messages \textit{NORM\_DATA}, \textit{NORM\_CMD(FLUSH)}, and \textit{NORM\_CMD(SQUELCH)}; and both receiver messages are used in the data transmission component of NORM, which I will be modeling and analyzing in Real-Time Maude. There are three sections in the transmission and repair of data: sender transmission (\textit{NORM\_DATA}, receiver repair request (\textit{NORM\_CMD(FLUSH)}, \textit{NORM\_NACK}), and sender NACK processing/repairing (\textit{NORM\_CMD(FLUSH)}, \textit{NORM\_CMD(SQUELCH)}).
 
 \subsubsection{NORM Specification and Model}
-A full discussion and explanation of the original Real-Time Maude model developed occurs in Chapter 4 of \cite{Lien2004}. Details of the specification relevant to this project follow.
+The Real-Time Maude specification model does not include components for congestion control, since this functionality is not crucial to ensuring reliability, but exists to relieve excessive network traffic. This specification further models communication with one sender to arbitrarily many receivers (\textit{one-to-many}). While NORM can support arbitrarily many senders to arbitrarily many receivers, most actual implementations leverage a \textit{one-to-many} paradigm (e.g., pushing a software update), so this is most beneficial to analyze. Additionally, all communication between senders and receivers is multicast\footnote{NORM can operate with transmission multicast from sender and the receivers have a unicast channel back to the sender}. Only finite data objects (e.g., messages, file transfers, etc.) will be examined without the use of FEC codes (these are used for packet recovery and do not affect instantiated NORM session communication between sender and receivers\footnote{An instantiated NORM session cannot add FEC encoding midway, but must have this specified beforehand. Of course, FEC encoding will reduce the amount of repair requests, so communication between senders and receivers would be impacted, but within the already defined NORM communication paradigm.})
 
-The Real-Time Maude specification model does not include components for congestion control, since this functionality is not crucial to ensuring reliability, but exists to relieve excessive network traffic. This specification further models communication with one sender to arbitrarily many receivers (\textit{one-to-many}). While NORM can support arbitrarily many senders to arbitrarily many receivers, most actual implementations leverage a \textit{one-to-many} paradigm, so this is most beneficial to analyze. Additionally, all communication between senders and receivers is multicast\footnote{NORM can operate with transmission multicast from sender and the receivers have a unicast channel back to the sender}. Only finite data objects (e.g., messages, file transfers, etc.) will be examined without the use of FEC codes (these are used for packet recovery and do not affect instantiated NORM session communication between sender and receivers\footnote{An instantiated NORM session cannot add FEC encoding midway, but must have this specified beforehand. Of course, FEC encoding will reduce the amount of repair requests, so communication between senders and receivers would be impacted, but within the already defined NORM communication paradigm.})
-
-Additional details of note: though NORM can operate within dynamic mobile contexts, only static topologies will be considered (for ease of analysis), and time will progress in the Maude analysis only when those NORM objects and components specified are operating in time (e.g., packet transfer will consume time, but instantaneous actions, such as packet wrapping for transmission, will not). Certain fundamental aspects of the NORM protocol have remained unchanged from the design specification used in \cite{Lien2004} and those present in the current IETF specification \cite{rfc5740}, namely, the random backoff timeout algorithm, which is critical to the receiver transmitting NACK repair requests and in distributing the round trip time calculations on a per receiver basis.
+Additionally, the following assumptions are made in the Real-Time Maude specification:
+\begin{enumerate}
+	\item Though NORM can operate within dynamic mobile contexts, only static topologies will be considered (for ease of analysis)
+	\item Time will progress in the Maude analysis only when those NORM objects and components specified are operating in time (e.g., packet transfer will consume time, but instantaneous actions, such as packet wrapping for transmission, will not). 
+	\item The random backoff timeout algorithm, which is critical to the receiver transmitting NACK repair requests and in distributing the round trip time calculations on a per receiver basis has remain unchanged in updated design specifications of NORM.
+\end{enumerate}
 
 \section{NORM Data and Repair Transmission Component}
 What follows is an explanation and some brief detail of the Real-Time Maude specification for the data transmission component of NORM. The author in \cite{Lien2004} originally had some difficulty in discerning particular sections (to be highlighted) due to ambiguity in the IETF draft specification. Fortunately, the ambiguities identified by the author have all been resolved in the updated specification. The resolution of these ambiguities will inform my attempts at updating the Real-Time Maude specification originally found in \cite{Lien2004}.
 
 \subsection{Specification}
 The author of \cite{Lien2004} identified three areas of ambiguity in the IETF draft version of NORM that required her to make a decision how the specific ambiguous piece of NORM functionality would be modeled in Real-Time Maude. Her decisions were additionally informed by the designers of NORM and recently (to her) released updated versions of NORM. The author identified the following areas as underspecified or ambiguous:
-\begin{itemize}
+\begin{enumerate}
 	\item \textit{Receiver NACK Cycle Initiation}: Normally, a NORM receiver will initiate the NACK cycle at specific events: NormObject boundaries, FEC coding block boundaries, or receipt of NORM\_CMD(FLUSH) messages. An alternative, self-initiating NACK cycle option also exists for receivers when no data is currently being received from a sender. The original IETF draft provides no details on this self-initiating NACK cycle process. Updated versions of the NORM standard, however, do provide detail on this operation and specifying this behavior will consitute part of my results.
 	\item \textit{Sender NACK Accumulation Timeout}: This ambiguity arose from a discrepancy between the 2003 NORM IETF draft document and the NORM building blocks document \cite{rfc5401}. The timeouts were specified differently in the two documents, and the IETF draft listed timeout did not allow for the receiver feedback suppression algorithm timeout to expire. This was corrected at the time of her original drafting of the Real-Time Maude specification.
 	\item \textit{Sender FLUSH Process}: The IETF draft of NORM ended the request and repair process between senders and receivers via a flag (NORM\_FLUSH\_FLAG\_EOT) embedded in the NORM\_CMD(FLUSH) message. This is the same message that informs receivers to request repairs, so it is unclear that if a receiver receives a NORM\_CMD(FLUSH) message with the flag set to end transmission that it would have time to submit last minute repair requests. This problem is remedied in the current version of NORM by simply removing that flag and introducing a new message NORM\_CMD(EOT) that explicitly informs receivers that transmission is ending allowing them to exit the NORM session gracefully. Implementing this message class in the Real-Time Maude specification will also be a subject of my results.
-\end{itemize}
+\end{enumerate}
 
 The data transmission component is broken up into two classes for the Real-Time Maude specification: \texttt{DTsender} and \texttt{DTreceiver}, which inherit from the base classes Sender and Receiver, respectfully. An application layer module, \texttt{APPLICATIONS}, defines applications to send and receive data. The sender application enqueues data for transmission and the receiver application collects data received by the receiver node \cite{Lien2004}. The author further defines an \texttt{OBJECT} message, which will be a "base" message that the other message types will "inherit" (i.e., wrap) for the different types of NORM messages defined. The following messages are defined for the data transmission component: NORM\_DATA, NORM\_CMD(FLUSH), NORM\_CMD(SQUELCH), and NORM\_NACK. My analysis will add the additional message NORM\_CMD(EOT) and modify the NORM\_CMD(FLUSH) message definition to account for the end of transmission message.
 
@@ -195,265 +187,24 @@ Rules defined for \texttt{DTreceiver} consist of:
 
 The previous classes, modules, and rules are required in Real-Time Maude to formally analyze and verify a system using the Maude/Real-Time Maude framework. Once these system components are defined, the system can be evaluated by defining a variety of initial states from which property satisfiability and system correctness can be analyzed. These states will be defined in the Analysis section.
 
-\subsubsection{Update Specification - NORM\_CMD(EOT) Message}
-In the fifteen years since \cite{Lien2004} was completed, NORM has become an Internet standard seeing wide use both in commercial and defense applications. Surprisingly, not much has changed in the draft used by the author and the current Internet standard. One significant difference especially relevant to the data transmission component of NORM, is the modification of the NORM\_CMD(FLUSH) message definition and the addition of the NORM\_CMD(EOT) message to allow for smoother operation of the flushing and repair request processes by receivers in a NORM session instance. As previously noted, originally a flag, NORM\_FLUSH\_FLAG\_EOT, would be turn on within the message NORM\_CMD(FLUSH) informing receivers that the sender was ending transmissions and all final repair requests need to be submitted. This approach, however, created some ambiguity regarding when exactly the sender node would cease transmitting: after it sends the flag enable NORM\_CMD(FLUSH) message or after some timeout to allow for additional repair requests to transit back from receivers? This is, of course, an implementation specific decision, which burdens NORM application developers with ensuring the protocol acts appropriately and does not introduce any safety issues. Historically, though, developer cannot be trusted to account for the potential safety issues different implementations may introduce, so the NORM designers decided to adjust the algorithm for a sender node to end transmission.
+\subsection{Analysis Replication}
 
-A sender node will now continue to send NORM\_CMD(FLUSH) commands while it is participating in responding to repair requests. Once it wishes to cease transmitting, it will send a NORM\_CMD(EOT) message, after which the sender will respond to no more repair requests or transmit any additional data. This approach allows both senders and receivers to end a NORM session gracefully and removes any potential ambiguities or safety issues from arising in implementation specific instances of NORM.
+Several hurdles were encountered when attempting to replicate the analysis of the Data Transmission and Repair component using the original Real-Time Maude specification from \cite{Lien2004}. I had to replicate a testing environment used in the early 2000's on an operating system and hardware that was the result of almost twenty years of constant improvement. The following steps were required in order to replicate the analysis from the original Real-Time Maude investigation.
 
-To this end, I added the NORM\_CMD(EOT) message to the Real-Time Maude specification of the data transmission component\footnote{For a full explanation of all variables referenced in the following code snippets, please refer to sections 4.2.3 and 7.3 of \cite{Lien2004}}. The original NORM\_CMD(FLUSH) message was defined as follows:
-\begin{lstlisting}[caption=Original FLUSH Message Definition, label=lst1:mxm,]
-***Usage: FLUSH(dataUnitId, grtt, eotFlag)
-msg FLUSH : DataUnitId Time Bool -> ControlPacket .
-\end{lstlisting}
+The author used Real-Time Maude 2.0, which was released in in 2004 and operated on top of Maude 2.0 (released in 2003). Locating Real-Time Maude 2.0 was not too difficult and only consists of a Maude file that defines the timing mechanisms for real-time analysis. Maude 2.0 proved somewhat more complex. Initially, I attempted to build version 2.0 from source, but was continually met with compiler errors that resulted from significant changes in linux c compiler design over the past 16 years. Eventually, I located a pre-built unix binary that I was able to execute on my Linux system and only needed to invoke this binary with the Real-Time Maude 2.0 definitions file in order to run Real-Time Maude. Maude 2.0, however, could not run initially within my terminal, since it contained too many color options and additional graphics options that Maude did not know how to parse. This was easily remedied by downloading a terminal vt100 emulator: xvt. Within xvt I was able to execute Real-Time Maude and run some example tests from the distribution website \cite{rtmaudeUrl}.
 
-With the addition of the NORM\_CMD(EOT) message, which removed the need for the NORM\_FLUSH\_FLAG\_EOT flag, the updated NORM\_CMD(FLUSH) message is now defined as:
-\begin{lstlisting}[caption=New FLUSH Message Definition, label=lst2:mxm,]
-***Usage: FLUSH(dataUnitId, grtt)
-msg FLUSH : DataUnitId Time -> ControlPacket .
-\end{lstlisting}
+The next hurdle involved implementing the Real-Time Maude specification of NORM in my Real-Time Maude environment. Initially, I attempted to copy the entire specification from the appendix of \cite{Lien2004}, but this proved to be an incomplete specification and lacked the object-oriented architectural structure required by the Real-Time Maude methods. Eventually, I found the author's code in an online repository of Real-Time Maude use cases. I fairly quickly was able to execute her files after some minor commenting and syntax errors (Statements, both in Maude and Real-Time Maude require termination with periods, some of which were missing from the files in the repository. The files seemed to be in a state of mid-completion/mid-testing, so were not completely polished.) After cleaning up the coding errors, I began replicating the tests the author developed in her initial Real-Time Maude analysis of NORM.
 
-The NORM\_CMD(EOT) message now assumes the functionality of the NORM\_FLUSH\_FLAG\_EOT flag and is defined similarly to the NORM\_CMD(FLUSH) message, but the rules for handling it will be different:
-\begin{lstlisting}[caption=EOT Message Definition, label=lst3:mxm,]
-***Usage: EOT(dataUnitId, grtt)
-msg EOT : DataUnitId Time -> ControlPacket .
-\end{lstlisting}
+\subsubsection{Data and Repair Properties}
 
-\bigbreak
-\subsubsection{Update Specification - Existing Process Rules}
-Originally, two rules governed the receipt of a NORM\_CMD(FLUSH) message: \texttt{initiateFlushProcess} and \texttt{flushProcess}. The first rule initiated the flush/repair request process and the second rule defined the continuation of the flush process. They are defined as follows:
+The author defined several properties for her analysis of the data and repair component of NORM ranging from examining initial sate behavior to assessing LTL logic formulas on the system. The following properties were defined for the data and repair component and I successfully replicated all of them within my Real-Time Maude environment.
+\begin{itemize}
+	\item 
+	
+\end{itemize}
 
-\begin{lstlisting}[caption=Rule to Initiate NORM FLUSH Process, label=lst4:mxm,]
-crl [initiateFlushProcess] :
-{< A : SenderApplication | dataBuffer : ML > 
-< S : DTsender |
-children : OS, GRTT : T,
-dataBuffer : objectBlock(ML'), flushBuffer : noObjectBlock,
-FLUSHcounter : 0, FLUSHtimer : INF,  
-NACKaccumTimer : INF, repairTransmission : nil >
-OC:ObjectConfiguration}
-=>
-{< A : SenderApplication | >
-< S : DTsender |
-dataBuffer : noObjectBlock, flushBuffer : objectBlock(ML'),
-FLUSHcounter : 1, FLUSHtimer : 2 * T >
-(multisend FLUSH(lastDataUnitId(objectBlock(ML')), T,
-(if ML == nil then true else false fi)) 
-from S to OS)
-OC:ObjectConfiguration}
-if allSegsTransmitted(ML') .
-\end{lstlisting}
+\subsection{Expanding Analysis}
 
-\begin{lstlisting}[caption=Rule defining ongoing NORM FLUSH Process, label=lst5:mxm,]
-crl [flushProcess] :
-{< A : SenderApplication | dataBuffer : ML >
-< S : DTsender |
-children : OS, NormRobustFactor : NZN, GRTT : T,
-dataBuffer : M, flushBuffer : M', 
-FLUSHcounter : N, FLUSHtimer : 0, 
-NACKaccumTimer : INF, repairTransmission : nil >
-OC:ObjectConfiguration}
-=>
-{< A : SenderApplication | >
-< S : DTsender |
-flushBuffer : (if s(N) == NZN then noObjectBlock else M' fi),
-FLUSHcounter : (if s(N) == NZN then 0 else s(N) fi), 
-FLUSHtimer : (if s(N) == NZN then INF else 2 * T fi) >
-(multisend FLUSH(lastDataUnitId(M'), T, 
-(if ML == nil and M == noObjectBlock then true else false fi)) 
-from S to OS)
-OC:ObjectConfiguration}
-if M' =/= noObjectBlock /\ N < NZN .
-\end{lstlisting}
-
-These rules in turn affected the NACK cycle process running on the receiver. This process was defined by the rules \texttt{NACKcycleInitiatedByFLUSH} and \texttt{ignoreFLUSH} (if receiver has received all transmitted segments) defined in the following manner:
-
-\begin{lstlisting}[caption=Rule defining NACK Cycle Initiation by FLUSH Message, label=lst6:mxm,]
-crl [NACKcycleInitiatedByFLUSH] : 
-(outOfLink FLUSH(NZN :: NZN', T, B) from O to R)
-< R : DTreceiver |
-randomSeed : N, NormRobustFactor : NZN'', gsize : NZN''', 
-receiveBuffer : ML, nextExpectedDUI : DUI,
-repairNeeds : DUIL, repairRequests : DUIL', 
-NACKbackoffTimer : TI, NACKcycleHoldoffTimer : TI',
-sendersCurrTransPos : DUI' >
-=>
-(if (keepValidNACKcontent(DUIL, NZN :: NZN') =/= nil
-or recordRepairNeeds(s(NZN) :: 1, DUI, 
-recBuffUpToDUI(ML, s(NZN) :: 1)) =/= nil) 
-and TI == INF and (TI' == INF or TI' == 0)
-then
-< R : DTreceiver | 
-GRTT : T, randomSeed : random(N),
-repairNeeds : addDUIlist(recordRepairNeeds(s(NZN) :: 1, DUI, 
-recBuffUpToDUI(ML, s(NZN) :: 1)),
-DUIL),
-repairRequests : addDUIlist(recordRepairNeeds(s(NZN) :: 1, DUI, 
-recBuffUpToDUI(ML, s(NZN) :: 1)),
-keepValidNACKcontent(DUIL, NZN :: NZN')),
-NACKbackoffTimer : randomBackoff(random(N), NZN'', T, NZN'''),
-sendersCurrTransPos : (if B then 0 :: 0 else DUI' fi) >
-else 
-< R : DTreceiver |
-GRTT : T, 
-nextExpectedDUI : 
-(if B == true and DUI == s(NZN) :: 1 then 0 :: 0 else DUI fi) > fi)  
-if largerThan(s(NZN) :: 1, DUI) /\ DUI =/= 0 :: 0 . 
-\end{lstlisting}
-
-\begin{lstlisting}[caption=Rule defining ignoring of FLUSH MESSAGE, label=lst7:mxm,]
-crl [ignoreFLUSH] :
-(outOfLink FLUSH(DUI, T, B) from O to R)
-< R : DTreceiver | nextExpectedDUI : DUI' >
-=>
-< R : DTreceiver | GRTT : T >
-if smallerThan(DUI, DUI') or DUI' == 0 :: 0 .
-\end{lstlisting}
-
-By adjusting the definition of the NORM\_CMD(FLUSH) message and the rules defining its transmittal, the rules originally defined in \cite{Lien2004} must be modified. Previously, the rule defining the behavior of NORM\_CMD(FLUSH) determined when transmission ended, the initiation of the NACK cycle, and how receivers replied with remaining repair requests. Adding in the NORM\_CMD(EOT) message changes the nature of those process. The ending of transmission will now be determined by the NORM\_CMD(EOT) message and this message itself will end both the flush process and the NACK accumulation process, while those processes remain to themselves entirely and the end-of-transmission in effect becomes its own process. This was a smart design decision to make in updating the NORM standard as it further modularizes the processes within a NORM session, making it (hopefully) more resilient and robust. In light of these changes, the previously defined rules will be modified to account for receiving NORM\_CMD(EOT) messages and a rule to handle the transmission from the sender of NORM\_CMD(EOT) messages will be defined.
-
-The changes made to existing rules consist of removing the logic in the rules that is dependent upon the original end of transmission flag NORM\_FLUSH\_FLAG\_EOT and adjusting for the new definition of the NORM\_CMD(FLUSH) message definition previously defined. The rules affected by removing this dependent logic are: \texttt{initiateFlushProcess}, \texttt{flushProcess}, \texttt{NACKcycleInitiatedByFLUSH}, and \texttt{ignoreFLUSH}. The sender rule \texttt{initiateEot} and receiver rule \texttt{NACKcycleKilledByEOT} will also be created. I will highlight the changes on a per rule basis.
-
-For the rule \texttt{initiateFlushProcess} defined in listing 4, 14 was originally defined as follows: 
-\begin{lstlisting}
-(multisend FLUSH(lastDataUnitId(objectBlock(ML')), T,
-(if ML == nil then true else false fi)) 
-from S to OS)
-\end{lstlisting}
-
-After updating the NORM\_CMD(FLUSH) message definition by removing the end of transmission flag and removing the dependent flag logic from the FLUSH process entirely:
-\begin{lstlisting}
-(multisend FLUSH(lastDataUnitId(objectBlock(ML')), T) from S to OS)
-\end{lstlisting}
-
-Similarly, the rule \texttt{flushProcess} defined in listing 5 relied on the end of transmission flag. Lines 15-17 of listing 5 originally read:
-\begin{lstlisting}
-(multisend FLUSH(lastDataUnitId(M'), T, 
-(if ML == nil and M == noObjectBlock then true else false fi)) 
-from S to OS)
-\end{lstlisting}
-\noindent
-After updating, the multisend command now reads:
-\begin{lstlisting}
-(multisend FLUSH(lastDataUnitId(M'), T) 
-     from S to OS)
-\end{lstlisting}
-
-These edits to these rules maintains original FLUSH process functionality, but removes the end of transmission logic. Before defining a rule to begin that process, the rules \texttt{NACKcycleInitiatedByFLUSH} and \texttt{ignoreFLUSH} must first be modified.
-
-For \texttt{NACKcycleInitiatedByFLUSH} defined in listing 6, line 2 must change to account for the new message definition for the NORM\_CMD(FLUSH) message:
-\begin{lstlisting}
-(outOfLink FLUSH(NZN :: NZN', T, B) from O to R)
-\end{lstlisting}
-\noindent
-With the updated FLUSH message definition removing the B boolean variable
-\begin{lstlisting}
-(outOfLink FLUSH(NZN ::NZN', T) from O to R)
-\end{lstlisting}
-
-\bigbreak
-Additionally, line 24 from listing 6:
-\begin{lstlisting}
-sendersCurrTransPos : (if B then 0 :: 0 else DUI' fi) >
-\end{lstlisting}
-\noindent
-becomes
-\begin{lstlisting}
-sendersCurrTransPos : DUI'' >
-\end{lstlisting}
-
-The final change for the rule \texttt{NACKcycleInitiatedByFLUSH}, occurs on lines 28 and 29:
-\begin{lstlisting}
-nextExpectedDUI : 
-(if B == true and DUI == s(NZN) :: 1 then 0 :: 0 else DUI fi) > fi)  
-\end{lstlisting}
-now becomes
-\begin{lstlisting}
-nextExpectedDUI : 
-(if DUI == s(NZN) :: 1 then 0 :: 0 else DUI fi) > fi)  
-\end{lstlisting}
-
-Finally, the last rule affected by the change in the FLUSH message definition is \texttt{ignoreFLUSH}, in which only how it reads the FLUSH message (line 2 in listing 7) from the link must be changed (i.e., remove the boolean variable B representing the end of transmission flag):
-\begin{lstlisting}
-(outOfLink FLUSH(DUI, T, B) from O to R)
-\end{lstlisting}
-\noindent
-now simply reads
-\begin{lstlisting}
-(outOfLink FLUSH(DUI, T) from O to R)
-\end{lstlisting}
-
-After modifying all of these process rules by removing the end of transmission flag dependencies, a process rules must be defined so a sender can transmit a NORM\_CMD(EOT) message and a receiver node has a process rule on how to handle the receipt of such a message.
-
-\subsubsection{Update Specification - NORM\_CMD(EOT) Process Rules}
-In order for the functionality of the updated NORM standard to be modeled in the Real-Time Maude specification, rules for a sender node to transmit a NORM\_CMD(EOT) message and a receiver node to act on the receipt of a NORM\_CMD(EOT) message must be created.
-
-For the sender node, this transmit rule is modeled similarly to the transmission of a FLUSH message, listing 2. The rule acts on a NORM object and will only transmit the NORM\_CMD(EOT) message after all enqueued data is transmitted and the sender wishes to terminate the transmission session. With this in mind, the following code defines the sender rule \texttt{initiateEOT}:
-\bigbreak
-\begin{lstlisting}[caption=Rule defining Sender initiating EOT, label=lst8:mxm,]
-crl [initiateEot] :
-{< A : SenderApplication | dataBuffer : ML >
-< S : DTsender |
-children : OS, NormRobustFactor : NZN, GRTT : T,
-dataBuffer : M, flushBuffer : M',
-FLUSHcounter : N, FLUSHtimer : 0,
-NACKaccumTimer : INF, repairTransmission : nil >
-OC:ObjectConfiguration}
-=>
-{< A : SenderApplication | >
-< S : DTsender |
-flushBuffer : (if s(N) == NZN then noObjectBlock else M' fi),
-FLUSHcounter : (if s(N) == NZN then 0 else s(N) fi), 
-FLUSHtimer : (if s(N) == NZN then INF else 2 * T fi) >
-(multisend EOT(lastDataUnitId(M'), T) from S to OS)
-OC:ObjectConfiguration}
-if M' =/= noObjectBlock /\ N < NZN .
-\end{lstlisting}
-
-The main function of this rule is simply to define the functionality to transmit a NORM\_CMD(EOT) message for a sender node, which occurs on line 15 with the \texttt{multisend} command. In Real-Time Maude a rule must be defined for objects, variables, and communication in order for the system functionality to exist within in the Real-Time Maude specification. In short, rules define functionality.
-
-The last rule regarding the NORM\_CMD(EOT) message defines the capability of a receiver to interpret the NORM\_CMD(EOT) message after reading it from the link. This rule models a similar structure to the rule \texttt{NACKcycleInitiatedByFLUSH} in listing 6 and is labeled \texttt{NACKcycleKilledByEOT}:
-\begin{lstlisting}[caption=Rule defining Receiver Killing EOT, label=lst9:mxm,]
-crl [NACKcycleKilledByEOT] :
-(outOfLink EOT(NZN :: NZN', T) from O to R)
-< R : DTreceiver |
-randomSeed : N, NormRobustFactor : NZN'', gsize : NZN''', 
-receiveBuffer : ML, nextExpectedDUI : DUI,
-repairNeeds : DUIL, repairRequests : DUIL', 
-NACKbackoffTimer : TI, NACKcycleHoldoffTimer : TI',
-sendersCurrTransPos : DUI' >
-=>
-(if (keepValidNACKcontent(DUIL, NZN :: NZN') =/= nil
-or recordRepairNeeds(s(NZN) :: 1, DUI, 
-recBuffUpToDUI(ML, s(NZN) :: 1)) =/= nil) 
-and TI == INF and (TI' == INF or TI' == 0)
-then
-< R : DTreceiver | 
-GRTT : T, randomSeed : random(N),
-repairNeeds : addDUIlist(recordRepairNeeds(s(NZN) :: 1, DUI, 
-recBuffUpToDUI(ML, s(NZN) :: 1)),
-DUIL),
-repairRequests : addDUIlist(recordRepairNeeds(s(NZN) :: 1, DUI, 
-recBuffUpToDUI(ML, s(NZN) :: 1)),
-keepValidNACKcontent(DUIL, NZN :: NZN')),
-NACKbackoffTimer : randomBackoff(random(N), NZN'', T, NZN'''),
-sendersCurrTransPos : 0 :: 0 >
-else 
-< R : DTreceiver |
-GRTT : T, 
-nextExpectedDUI : 
-(if DUI == s(NZN) :: 1 then 0 :: 0 else DUI fi) > fi)  
-if largerThan(s(NZN) :: 1, DUI) /\ DUI =/= 0 :: 0 .
-\end{lstlisting}
-
-This rule receives the NORM\_CMD(EOT) message (line 2) and either resets the sender's current transmission position to 0 (line 24) or  either resets the receivers data unit ID (Real-Time Maude specification variable) if no packets require repair or leaves the data unit ID as is, which leaves unrepaired packets as is.
-
-To summarize these rule modifications and additions, the rules that previously depended on the deprecated, and subsequently removed, end of transmission flag NORM\_FLUSH\_FLAG\_EOT (\texttt{initiateFlushProcess}, \texttt{flushProcess}, \texttt{NACKcycleInitiatedByFLUSH}, and \texttt{ignoreFLUSH}) were modified and no longer require knowledge of sender intent to end transmission and quit the instantiated NORM session. The sender rule \texttt{initiateEOT} was created to enable a sender node the ability to inform receivers of its intent to end transmission and the creation of the receiver rule \texttt{NACKcycleKilledByEOT} provides receiver nodes the knowledge of a NORM\_CMD(EOT) transmission and to gracefully exit a NORM session. With these rules defined, analysis of properties and safety conditions can be performed on the updated NORM data transmission component Real-Time Maude specification.
-
-\subsection{Results Analysis}
-
-\subsubsection{Replication Analysis}
-
-\subsubsection{Updated Specification Analysis}
 
 \section{Conclusion}
 ``It is kaput.'' - Baron Manfred von Richthofen. To be completed.

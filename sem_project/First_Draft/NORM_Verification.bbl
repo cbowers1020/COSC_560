@@ -32,23 +32,21 @@ J.~P. Macker, C.~Bormann, M.~J. Handley, and B.~Adamson, ``{NACK-Oriented
   [Online]. Available: \url{https://rfc-editor.org/rfc/rfc5740.txt}
 \BIBentrySTDinterwordspacing
 
+\bibitem{rtmaudeUrl}
+\BIBentryALTinterwordspacing
+The real-time maude webpage. [Online]. Available:
+  \url{http://heim.ifi.uio.no/peterol/RealTimeMaude/}
+\BIBentrySTDinterwordspacing
+
+\bibitem{maudeUrl}
+\BIBentryALTinterwordspacing
+The maude webpage. [Online]. Available:
+  \url{http://maude.cs.illinois.edu/w/index.php/The\_Mau\-de\_System}
+\BIBentrySTDinterwordspacing
+
 \bibitem{Bochman1980}
 G.~V. Bochman and C.~A. Sunshine, ``Formal methods in communication protocol
   design,'' \emph{IEEE Transactions on Communications}, 1980.
-
-\bibitem{Holzmann1990}
-G.~J. Holzmann, \emph{Design and Validation of Computer Protocols}.\hskip 1em
-  plus 0.5em minus 0.4em\relax Upper Saddle River, NJ, USA: Prentice-Hall,
-  Inc., 1991.
-
-\bibitem{Milner1989}
-R.~Milner, \emph{Communication and Concurrency}.\hskip 1em plus 0.5em minus
-  0.4em\relax Prentice-Hall, 1989.
-
-\bibitem{Baptista1990}
-M.~Baptista, S.~Graf, J.-L. Richier, L.~Rodrigues, C.~Rodriguez,
-  P.~Ver{\'\i}ssimo, and J.~Voiron, ``Formal specification and verification of
-  a network independent atomic multicast protocol.'' 01 1990, pp. 345--352.
 
 \bibitem{Creese1999}
 S.~J. Creese and J.~Reed, ``Verifying end-to-end protocols using induction with
@@ -59,6 +57,11 @@ S.~J. Creese and J.~Reed, ``Verifying end-to-end protocols using induction with
 \bibitem{Callahan1995}
 J.~R. Callahan and T.~L. Montgomery, ``Verification and validation of a
   reliable multicast protocol,'' NASA, Tech. Rep., 1995.
+
+\bibitem{Baptista1990}
+M.~Baptista, S.~Graf, J.-L. Richier, L.~Rodrigues, C.~Rodriguez,
+  P.~Ver{\'\i}ssimo, and J.~Voiron, ``Formal specification and verification of
+  a network independent atomic multicast protocol.'' 01 1990, pp. 345--352.
 
 \bibitem{Gorrieri2008}
 R.~Gorrieri, F.~Martinelli, and M.~Petrocchi, ``Formal models and analysis of
@@ -87,10 +90,6 @@ M.~Archer, ``Proving correctness of the basic tesla multicast stream
   authentication protocol with tame.''\hskip 1em plus 0.5em minus 0.4em\relax
   NRL, 2002.
 
-\bibitem{Borujerdi2004}
-M.~Borujerdi and S.~Mirzababaei, ``Formal verification of a multicast protocol
-  in mobile networks.'' 01 2004, pp. 270--273.
-
 \bibitem{Tan2000}
 \BIBentryALTinterwordspacing
 C.~L. Tan and S.~Pink, ``Mobicast: A multicast scheme for wireless networks,''
@@ -103,17 +102,15 @@ G.~Anastasi, A.~Bartoli, N.~De~Francesco, and A.~Santone, ``Efficient
   verification of a multicast protocol for mobile computing,'' \emph{The
   Computer Journal}, vol.~44, 12 2000.
 
+\bibitem{Milner1989}
+R.~Milner, \emph{Communication and Concurrency}.\hskip 1em plus 0.5em minus
+  0.4em\relax Prentice-Hall, 1989.
+
 \bibitem{Cleaveland1996}
 R.~Cleaveland and S.~Sims, ``The ncsu concurrency workbench,'' in
   \emph{Computer Aided Verification}, R.~Alur and T.~A. Henzinger, Eds.\hskip
   1em plus 0.5em minus 0.4em\relax Berlin, Heidelberg: Springer Berlin
   Heidelberg, 1996, pp. 394--397.
-
-\bibitem{rtmaudeUrl}
-\BIBentryALTinterwordspacing
-The real-time maude webpage. [Online]. Available:
-  \url{http://heim.ifi.uio.no/peterol/RealTimeMaude/}
-\BIBentrySTDinterwordspacing
 
 \bibitem{Olvezky2004}
 P.~C. {\"O}lveczky and J.~Meseguer, ``Specification and analysis of real-time
@@ -121,12 +118,6 @@ P.~C. {\"O}lveczky and J.~Meseguer, ``Specification and analysis of real-time
   Engineering}, M.~Wermelinger and T.~Margaria-Steffen, Eds.\hskip 1em plus
   0.5em minus 0.4em\relax Berlin, Heidelberg: Springer Berlin Heidelberg, 2004,
   pp. 354--358.
-
-\bibitem{maudeUrl}
-\BIBentryALTinterwordspacing
-The maude webpage. [Online]. Available:
-  \url{http://maude.cs.illinois.edu/w/index.php/The\_Mau\-de\_System}
-\BIBentrySTDinterwordspacing
 
 \bibitem{Clavel2002}
 M.~Clavel, F.~Dur{\'a}n, S.~Eker, P.~Lincoln, N.~Mart{\'\i}-Oliet, J.~Meseguer,
@@ -139,6 +130,28 @@ J.~Meseguer, ``Conditional rewriting logic as a unified model of concurrency,''
   \emph{Theor. Comput. Sci.}, vol.~96, no.~1, pp. 73--155, Apr. 1992. [Online].
   Available: \url{http://dx.doi.org/10.1016/0304-3975(92)90182-F}
 \BIBentrySTDinterwordspacing
+
+\bibitem{Escobar2018}
+\BIBentryALTinterwordspacing
+A.~Gonz{\'{a}}lez{-}Burgue{\~{n}}o, D.~Aparicio, S.~Escobar, C.~A. Meadows, and
+  J.~Meseguer, ``Formal verification of the yubikey and yubihsm apis in
+  maude-npa,'' \emph{CoRR}, vol. abs/1806.07209, 2018. [Online]. Available:
+  \url{http://arxiv.org/abs/1806.07209}
+\BIBentrySTDinterwordspacing
+
+\bibitem{Thorvaldsen2007}
+P.~C. {\"O}lveczky and S.~Thorvaldsen, ``Formal modeling and analysis of the
+  ogdc wireless sensor network algorithm in real-time maude,'' in \emph{Formal
+  Methods for Open Object-Based Distributed Systems}, M.~M. Bonsangue and E.~B.
+  Johnsen, Eds.\hskip 1em plus 0.5em minus 0.4em\relax Berlin, Heidelberg:
+  Springer Berlin Heidelberg, 2007, pp. 122--140.
+
+\bibitem{Caccamo2006}
+P.~C. {\"O}lveczky and M.~Caccamo, ``Formal simulation and analysis of the cash
+  scheduling algorithm in real-time maude,'' in \emph{Fundamental Approaches to
+  Software Engineering}, L.~Baresi and R.~Heckel, Eds.\hskip 1em plus 0.5em
+  minus 0.4em\relax Berlin, Heidelberg: Springer Berlin Heidelberg, 2006, pp.
+  357--372.
 
 \bibitem{rfc5401}
 B.~Adamson, C.~Bormann, M.~Handley, and J.~Macker, ``Multicast
