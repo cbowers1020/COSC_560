@@ -187,6 +187,27 @@ endtom)
     if NZN'' < NZN' . 
 
 
+  *** EOT Process
+  *** End transmission or continue to send FLUSHES
+  crl [initiateEot] :
+    {< A : SenderApplication | dataBuffer : ML >
+     < S : DTsender |
+       children : OS, NormRobustFactor : NZN, GRTT : T,
+       dataBuffer : M, flushBuffer : M',
+       FLUSHcounter : N, FLUSHtimer : 0,
+       NACKaccumTimer : INF, repairTransmission : nil >
+     OC:ObjectConfiguration}
+     =>
+    {< A : SenderApplication | >
+     < S : DTsender |
+       flushBuffer : noObjectBlock,
+       FLUSHcounter : 0, 
+       FLUSHtimer : INF >
+     (multisend EOT(lastDataUnitId(M'), T) from S to OS)
+     OC:ObjectConfiguration}
+     if ML == nil and M == noObjectBlock .
+
+
       
   *** FLUSH PROCESS
 
@@ -195,8 +216,8 @@ endtom)
   *** new data content and repair messages, it sends the first
   *** FLUSH for the data content and moves the transmitted 
   *** objects to the flush buffer. If the transmission is done,
-  *** i.e., the application's buffer is empty, the sender sets
-  *** the end-of-transmission flag. This is written as a global
+  *** i.e., the application's buffer is empty, the sender sends
+  *** the EOT message. This is written as a global
   *** rule to make sure that the rewrite is only performed on 
   *** an object configuration - otherwise the FLUSH might be sent
   *** into the link before the last segment of the enqueued data.
@@ -216,9 +237,8 @@ endtom)
     < S : DTsender |
       dataBuffer : noObjectBlock, flushBuffer : objectBlock(ML'),
       FLUSHcounter : 1, FLUSHtimer : 2 * T >
-    (multisend FLUSH(lastDataUnitId(objectBlock(ML')), T,
-                     (if ML == nil then true else false fi)) 
-     from S to OS) 
+    (multisend FLUSH(lastDataUnitId(objectBlock(ML')), T) 
+     from S to OS)
     OC:ObjectConfiguration}
     if allSegsTransmitted(ML') .
 
@@ -243,8 +263,7 @@ endtom)
       flushBuffer : (if s(N) == NZN then noObjectBlock else M' fi),
       FLUSHcounter : (if s(N) == NZN then 0 else s(N) fi), 
       FLUSHtimer : (if s(N) == NZN then INF else 2 * T fi) >
-    (multisend FLUSH(lastDataUnitId(M'), T, 
-      (if ML == nil and M == noObjectBlock then true else false fi)) 
+    (multisend FLUSH(lastDataUnitId(M'), T) 
      from S to OS)
     OC:ObjectConfiguration}
     if M' =/= noObjectBlock /\ N < NZN .
@@ -405,7 +424,6 @@ endtom)
     =>
     < S : DTsender |
       repairCycleHoldoffTimer : INF > .
-
 
 
   *** SQUELCH MESSAGE
@@ -619,7 +637,7 @@ endtom)
   *** NACK cycle or a holdoff period.
 
   crl [NACKcycleInitiatedByFLUSH] : 
-    (outOfLink FLUSH(NZN :: NZN', T, B) from O to R)
+    (outOfLink FLUSH(NZN :: NZN', T) from O to R)
     < R : DTreceiver |
       randomSeed : N, NormRobustFactor : NZN'', gsize : NZN''', 
       receiveBuffer : ML, nextExpectedDUI : DUI,
@@ -641,14 +659,46 @@ endtom)
                                        recBuffUpToDUI(ML, s(NZN) :: 1)),
                                    keepValidNACKcontent(DUIL, NZN :: NZN')),
        NACKbackoffTimer : randomBackoff(random(N), NZN'', T, NZN'''),
-       sendersCurrTransPos : (if B then 0 :: 0 else DUI' fi) >
+       sendersCurrTransPos : DUI' >
+     else 
+     < R : DTreceiver |
+       GRTT : T, 
+       nextExpectedDUI : DUI > fi)  
+    if largerThan(s(NZN) :: 1, DUI) /\ DUI =/= 0 :: 0 . 
+
+
+  *** End NACK Cycle upon reception of EOT
+
+  crl [NACKcycleKilledByEOT] :
+    (outOfLink EOT(NZN :: NZN', T) from O to R)
+    < R : DTreceiver |
+      randomSeed : N, NormRobustFactor : NZN'', gsize : NZN''', 
+      receiveBuffer : ML, nextExpectedDUI : DUI,
+      repairNeeds : DUIL, repairRequests : DUIL', 
+      NACKbackoffTimer : TI, NACKcycleHoldoffTimer : TI',
+      sendersCurrTransPos : DUI' >
+    =>
+    (if (keepValidNACKcontent(DUIL, NZN :: NZN') =/= nil
+     or recordRepairNeeds(s(NZN) :: 1, DUI, 
+                          recBuffUpToDUI(ML, s(NZN) :: 1)) =/= nil) 
+     and TI == INF and (TI' == INF or TI' == 0)
+     then
+     < R : DTreceiver | 
+       GRTT : T, randomSeed : random(N),
+       repairNeeds : addDUIlist(recordRepairNeeds(s(NZN) :: 1, DUI, 
+                                    recBuffUpToDUI(ML, s(NZN) :: 1)),
+                                DUIL),
+       repairRequests : addDUIlist(recordRepairNeeds(s(NZN) :: 1, DUI, 
+                                       recBuffUpToDUI(ML, s(NZN) :: 1)),
+                                   keepValidNACKcontent(DUIL, NZN :: NZN')),
+       NACKbackoffTimer : randomBackoff(random(N), NZN'', T, NZN'''),
+       sendersCurrTransPos : 0 :: 0 >
      else 
      < R : DTreceiver |
        GRTT : T, 
        nextExpectedDUI : 
-         (if B == true and DUI == s(NZN) :: 1 then 0 :: 0 else DUI fi) > fi)  
-    if largerThan(s(NZN) :: 1, DUI) /\ DUI =/= 0 :: 0 . 
-
+         (if DUI == s(NZN) :: 1 then 0 :: 0 else DUI fi) > fi)  
+    if largerThan(s(NZN) :: 1, DUI) /\ DUI =/= 0 :: 0 .
 
 
   *** A receiver which has received all transmitted segments or
@@ -656,7 +706,7 @@ endtom)
   *** FLUSH messages from the sender.
 
   crl [ignoreFLUSH] :
-    (outOfLink FLUSH(DUI, T, B) from O to R)
+    (outOfLink FLUSH(DUI, T) from O to R)
     < R : DTreceiver | nextExpectedDUI : DUI' >
     =>
     < R : DTreceiver | GRTT : T >

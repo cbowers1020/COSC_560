@@ -76,7 +76,7 @@ load data.rtmaude
 endtom)
 
 ***(trew data1 with no time limit .)
-******q
+***q
 ***(tsearch data1 =>*
 ***{< O:Oid : DTreceiverAlone |
 ***repairNeeds : (NZN:NzNat :: N:Nat) ; DUIL:DataUnitIdList,

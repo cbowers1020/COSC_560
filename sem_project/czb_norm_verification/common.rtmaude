@@ -282,11 +282,11 @@ endfm)
   msg DATA : DataUnitId NzNat Time Bool -> DataPacket .
 
 
+  *** Usage: FLUSH(dataUnitId, grtt)
+  msg FLUSH : DataUnitId Time -> ControlPacket .
 
-  *** Usage: FLUSH(dataUnitId, grtt, eotFlag)
-  *** Eot flag is true if this is the end of transmission.
-  msg FLUSH : DataUnitId Time Bool -> ControlPacket .
-
+  *** Usage: EOT(dataUnitId, grtt)
+  msg EOT : DataUnitId Time -> ControlPacket .
 
 
   *** Usage: SQUELCH(earliestDUIvalidForRepair, grtt) 
